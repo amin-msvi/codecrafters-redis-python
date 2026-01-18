@@ -1,2 +1,1 @@
 """Redis server application package."""
-
