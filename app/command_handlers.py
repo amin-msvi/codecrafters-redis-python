@@ -1,9 +1,15 @@
+from types import SimpleNamespace
 from app.resp_parser import RESPError
 
 Handler = str | RESPError
 
 
-def ping_handler(args: list):
+class SimpleString:
+    def __init__(self, s: str):
+        self.s = s
+   
+
+def ping_handler(args: list) -> SimpleNamespace | RESPError:
     """
     PING [message]
 
@@ -13,7 +19,7 @@ def ping_handler(args: list):
     """
 
     if len(args) == 0:
-        return "PONG"
+        return SimpleNamespace(s="PONG")
     elif len(args) == 1:
         return args[0]
     else:

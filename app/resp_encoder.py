@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from app.resp_parser import RESPError
 
 
@@ -36,7 +37,9 @@ def encode_array(items: list | None) -> bytes:
 
 def encode_resp(value) -> bytes:
     """Generic encoder that auto-detects type and routes"""
-    if isinstance(value, str):
+    if isinstance(value, SimpleNamespace):
+        return encode_simple_string(value.s)
+    elif isinstance(value, str):
         return encode_bulk_string(value)
     elif isinstance(value, int):
         return encode_integer(value)
