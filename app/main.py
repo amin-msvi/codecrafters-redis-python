@@ -2,6 +2,10 @@ import socket  # noqa: F401
 from app.logger import setup_logging, get_logger
 import select
 
+from app.resp_encoder import encode_resp
+from app.resp_parser import parse_resp
+from app.command_handlers import handle_command
+
 logger = get_logger(__name__)
 
 SERVER_ADDRESS = "localhost"
@@ -30,14 +34,17 @@ def main():
                     sockets_list.append(connection)
                 else:
                     data = ready_socket.recv(1024)
-
                     # Empty data
                     if data == b"":
                         logger.info("Client %s disconnected", ready_socket)
                         sockets_list.remove(ready_socket)
                         ready_socket.close()
-                    elif b"PING" in data:
-                        ready_socket.sendall(b"+PONG\r\n")
+                    else:
+                        parsed_data = parse_resp(data)[0]
+                        result = handle_command(parsed_data)
+                        encoded_result = encode_resp(result)
+                        ready_socket.sendall(encoded_result)
+
 
 
 if __name__ == "__main__":
