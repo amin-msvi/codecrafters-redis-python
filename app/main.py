@@ -27,7 +27,6 @@ def main():
             ready_to_read, _, _ = select.select(sockets_list, [], [])
 
             for ready_socket in ready_to_read:
-
                 if ready_socket == server_socket:
                     connection, _ = ready_socket.accept()
                     logger.info("Connection received from %s", connection)
@@ -44,7 +43,6 @@ def main():
                         result = handle_command(parsed_data)
                         encoded_result = encode_resp(result)
                         ready_socket.sendall(encoded_result)
-
 
 
 if __name__ == "__main__":

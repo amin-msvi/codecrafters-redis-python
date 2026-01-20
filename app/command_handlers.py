@@ -5,6 +5,7 @@ Handler = str | RESPError
 
 data_store = DataStore()
 
+
 class SimpleString:
     def __init__(self, s: str):
         self.s = s
@@ -41,25 +42,25 @@ def echo_handler(args: list):
 def get_handler(args: list):
     """
     GET a value for a key
-    
+
     Returns: value
     """
     if len(args) != 1:
         return RESPError("Wrong number of argument for 'get' command")
     return data_store.get(args[0])
-    
+
 
 def set_handler(args: list):
     """
     SET a key-value pair in DataStore.
-    
+
     Returns 'OK' (simple string) if successful
     """
     if len(args) != 2:
         return RESPError("wrong number of argument for 'set' command")
     data_store.set(key=args[0], val=args[1])
     return SimpleString(s="OK")
-    
+
 
 COMMAND_HANDLER = {
     "PING": ping_handler,
