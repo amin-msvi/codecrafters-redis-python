@@ -1,15 +1,16 @@
-from types import SimpleNamespace
 from app.resp_parser import RESPError
+from app.data_store import DataStore
 
 Handler = str | RESPError
 
+data_store = DataStore()
 
 class SimpleString:
     def __init__(self, s: str):
         self.s = s
-   
 
-def ping_handler(args: list) -> SimpleNamespace | RESPError:
+
+def ping_handler(args: list) -> SimpleString | RESPError:
     """
     PING [message]
 
@@ -19,7 +20,7 @@ def ping_handler(args: list) -> SimpleNamespace | RESPError:
     """
 
     if len(args) == 0:
-        return SimpleNamespace(s="PONG")
+        return SimpleString(s="PONG")
     elif len(args) == 1:
         return args[0]
     else:
@@ -37,9 +38,34 @@ def echo_handler(args: list):
     return args[0]
 
 
+def get_handler(args: list):
+    """
+    GET a value for a key
+    
+    Returns: value
+    """
+    if len(args) != 1:
+        return RESPError("Wrong number of argument for 'get' command")
+    return data_store.get(args[0])
+    
+
+def set_handler(args: list):
+    """
+    SET a key-value pair in DataStore.
+    
+    Returns 'OK' (simple string) if successful
+    """
+    if len(args) != 2:
+        return RESPError("wrong number of argument for 'set' command")
+    data_store.set(key=args[0], val=args[1])
+    return SimpleString(s="OK")
+    
+
 COMMAND_HANDLER = {
     "PING": ping_handler,
     "ECHO": echo_handler,
+    "SET": set_handler,
+    "GET": get_handler,
 }
 
 
