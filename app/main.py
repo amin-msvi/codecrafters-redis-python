@@ -1,10 +1,10 @@
-import socket  # noqa: F401
-from app.logger import setup_logging, get_logger
 import select
+import socket  # noqa: F401
 
+from app.command_handlers import handle_command
+from app.logger import get_logger, setup_logging
 from app.resp_encoder import encode_resp
 from app.resp_parser import parse_resp
-from app.command_handlers import handle_command
 
 logger = get_logger(__name__)
 

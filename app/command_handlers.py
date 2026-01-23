@@ -1,5 +1,6 @@
 from app.resp_parser import RESPError
 from app.data_store import DataStore
+from app.utils import get_expiry
 
 Handler = str | RESPError
 
@@ -53,12 +54,13 @@ def get_handler(args: list):
 def set_handler(args: list):
     """
     SET a key-value pair in DataStore.
+    Example: ['mykey', 10, 'eX', 10]
 
     Returns 'OK' (simple string) if successful
     """
-    if len(args) != 2:
+    if len(args) < 2:
         return RESPError("wrong number of argument for 'set' command")
-    data_store.set(key=args[0], val=args[1])
+    data_store.set(key=args[0], value=args[1], expiry_ms=get_expiry(args))
     return SimpleString(s="OK")
 
 
@@ -70,7 +72,7 @@ COMMAND_HANDLER = {
 }
 
 
-def handle_command(command: list) -> Handler:
+def handle_command(command: tuple | None) -> Handler:
     """
     Takes: ["ECHO", "hey"]
     Returns "hey" (or RESPError for errors)
