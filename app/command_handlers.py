@@ -1,15 +1,10 @@
-from app.resp_parser import RESPError
+from app.types import RESPError, SimpleString
 from app.data_store import DataStore
 from app.utils import get_expiry
 
 Handler = str | RESPError
 
 data_store = DataStore()
-
-
-class SimpleString:
-    def __init__(self, s: str):
-        self.s = s
 
 
 def ping_handler(args: list) -> SimpleString | RESPError:
@@ -22,11 +17,11 @@ def ping_handler(args: list) -> SimpleString | RESPError:
     """
 
     if len(args) == 0:
-        return SimpleString(s="PONG")
+        return SimpleString(string="PONG")
     elif len(args) == 1:
         return args[0]
     else:
-        return RESPError("wrong number of arguments for 'ping' command")
+        return RESPError(message="wrong number of arguments for 'ping' command")
 
 
 def echo_handler(args: list):
@@ -36,7 +31,7 @@ def echo_handler(args: list):
     Returns the message.
     """
     if len(args) != 1:
-        return RESPError("wrong number of arguments for 'echo' command")
+        return RESPError(message="wrong number of arguments for 'echo' command")
     return args[0]
 
 
@@ -47,11 +42,11 @@ def get_handler(args: list):
     Returns: value
     """
     if len(args) != 1:
-        return RESPError("Wrong number of argument for 'get' command")
+        return RESPError(message="Wrong number of argument for 'get' command")
     return data_store.get(args[0])
 
 
-def set_handler(args: list):
+def set_handler(args: list) -> SimpleString | RESPError:
     """
     SET a key-value pair in DataStore.
     Example: ['mykey', 10, 'eX', 10]
@@ -59,9 +54,9 @@ def set_handler(args: list):
     Returns 'OK' (simple string) if successful
     """
     if len(args) < 2:
-        return RESPError("wrong number of argument for 'set' command")
+        return RESPError(message="wrong number of argument for 'set' command")
     data_store.set(key=args[0], value=args[1], expiry_ms=get_expiry(args))
-    return SimpleString(s="OK")
+    return SimpleString(string="OK")
 
 
 COMMAND_HANDLER = {
@@ -72,18 +67,18 @@ COMMAND_HANDLER = {
 }
 
 
-def handle_command(command: tuple | None) -> Handler:
+def handle_command(command: tuple | None) -> Handler | RESPError:
     """
     Takes: ["ECHO", "hey"]
     Returns "hey" (or RESPError for errors)
     """
 
     if not command:
-        return RESPError("empty command")
+        return RESPError(message="empty command")
 
     cmd_name = command[0].upper()
     args = command[1:]
     handler = COMMAND_HANDLER.get(cmd_name)
     if handler is None:
-        return RESPError(f"unknown command '{command[0]}'")
+        return RESPError(message=f"unknown command '{command[0]}'")
     return handler(args)

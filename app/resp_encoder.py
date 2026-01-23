@@ -1,5 +1,5 @@
-from app.resp_parser import RESPError
-from app.command_handlers import SimpleString
+from app.types import EncodeableValue, RESPError, SimpleString
+from typing import assert_never
 
 
 def encode_simple_string(s: str) -> bytes:
@@ -35,19 +35,20 @@ def encode_array(items: list | None) -> bytes:
     return b"".join(parts)
 
 
-def encode_resp(value) -> bytes:
+def encode_resp(value: EncodeableValue) -> bytes:
     """Generic encoder that auto-detects type and routes"""
-    if isinstance(value, SimpleString):
-        return encode_simple_string(value.s)
-    elif isinstance(value, str):
-        return encode_bulk_string(value)
-    elif isinstance(value, int):
-        return encode_integer(value)
-    elif isinstance(value, list):
-        return encode_array(value)
-    elif isinstance(value, RESPError):
-        return encode_error(value.message)
-    elif value is None:
-        return encode_bulk_string(None)
-    else:
-        raise ValueError(f"Cannot encode type: {type(value)}")
+    match value:
+        case SimpleString():
+            return encode_simple_string(value.string)
+        case RESPError():
+            return encode_error(value.message)
+        case str():
+            return encode_bulk_string(value)
+        case int():
+            return encode_integer(value)
+        case list():
+            return encode_array(value)
+        case None:
+            return encode_bulk_string(None)
+        case _:
+            assert_never(value)

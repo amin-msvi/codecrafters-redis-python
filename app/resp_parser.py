@@ -1,34 +1,4 @@
-from dataclasses import dataclass
-
-
-class RESPProtocolError(Exception):
-    """Exception raised when RESP protocl is violated."""
-
-    def __init__(self, message: str, data=None, position: int | None = None):
-        """
-        Args:
-            message: Human-readable error description
-            data: The invalid RESP data (optional)
-            position: Position in the data where error occurred (optional)
-        """
-
-        self.message = message
-        self.data = data
-        self.position = position
-
-        full_message = f"RESP Protocol Error: {message}"
-
-        if position is not None:
-            full_message += f" at {position}"
-        if data is not None:
-            # Showing a snippet of the problematic data (first 50 bytes)
-            data_review = data[:50]
-            full_message += f"\nData: {data_review!r}"
-            if len(data) > 50:
-                full_message += "..."
-
-        super().__init__(full_message)
-
+from app.types import ParseResult, RESPError, RESPProtocolError
 
 def parse_bulk_string(data: bytes) -> tuple[str | None, bytes]:
     """
@@ -100,13 +70,6 @@ def parse_bulk_string(data: bytes) -> tuple[str | None, bytes]:
     return string_data, remaining
 
 
-@dataclass
-class RESPError:
-    """Represents a RESP error response (-ERR ...)"""
-
-    message: str
-
-
 def parse_simple_string(data: bytes) -> tuple[str, bytes]:
     """
     Parse a RESP simple string.
@@ -166,7 +129,7 @@ def parse_error(data: bytes) -> tuple[RESPError, bytes]:
     error_message = data[1:end_idx].decode("utf-8")
     remaining = data[end_idx + 2 :]
 
-    return RESPError(error_message), remaining
+    return RESPError(message=error_message), remaining
 
 
 def parse_integer(data: bytes) -> tuple[int, bytes]:
@@ -279,7 +242,7 @@ def parse_array(
 
 def parse_resp(
     data: bytes, depth: int = 0, max_depth: int = 10
-) -> tuple[str | int | list | None | RESPProtocolError | RESPError, bytes]:
+) -> ParseResult:
     """
     Parse one RESP value from data.
 
