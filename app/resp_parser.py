@@ -1,5 +1,6 @@
 from app.types import ParseResult, RESPError, RESPProtocolError
 
+
 def parse_bulk_string(data: bytes) -> tuple[str | None, bytes]:
     """
     Parse a bulk string from RESP format.
@@ -240,9 +241,7 @@ def parse_array(
     return elements, remaining
 
 
-def parse_resp(
-    data: bytes, depth: int = 0, max_depth: int = 10
-) -> ParseResult:
+def parse_resp(data: bytes, depth: int = 0, max_depth: int = 10) -> ParseResult:
     """
     Parse one RESP value from data.
 

@@ -1,10 +1,11 @@
 import select
 import socket  # noqa: F401
 
-from app.command_handlers import handle_command
+from app.data_store import DataStore
 from app.logger import get_logger, setup_logging
 from app.resp_encoder import encode_resp
 from app.resp_parser import parse_resp
+from app.commands.registry import CommandRegistry
 
 logger = get_logger(__name__)
 
@@ -16,6 +17,11 @@ def main():
     setup_logging()
 
     logger.info("Starting the server...")
+
+    data_store = DataStore()
+
+    commands = CommandRegistry()
+    commands.auto_discover(data_store)
 
     with socket.create_server(
         (SERVER_ADDRESS, SERVER_PORT), reuse_port=True
@@ -40,7 +46,7 @@ def main():
                         ready_socket.close()
                     else:
                         parsed_data = parse_resp(data)[0]
-                        result = handle_command(parsed_data)
+                        result = commands.execute(parsed_data)
                         encoded_result = encode_resp(result)
                         ready_socket.sendall(encoded_result)
 
