@@ -13,8 +13,6 @@ class PingCommand(Command):
     arity = (0, 1)
 
     def execute(self, args: list[str]) -> SimpleString | str:
-        # TODO: Implement PING logic
-        # Hint: Return SimpleString("PONG") or the message
         if len(args) == 0:
             return SimpleString(string="PONG")
         return args[0]

@@ -11,8 +11,6 @@ class Command(ABC):
     - arity: Tuple of (min_args, max_args), use float('inf') for unlimited
     - execute(): The command logic
     """
-
-    # Class attributes that subclasses must define
     name: str
     arity: tuple[int, int | float]  # (min, max) -- max can be infinity
 
@@ -40,7 +38,6 @@ class Command(ABC):
             return None
 
         min_args, max_args = self.arity
-        # TODO: You'll implement the validation logic
         if min_args <= len(args) <= max_args:
             return None
         if min_args == max_args:
