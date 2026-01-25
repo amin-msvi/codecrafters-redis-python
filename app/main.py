@@ -1,54 +1,22 @@
-import select
-import socket  # noqa: F401
-
-from app.data_store import DataStore
-from app.logger import get_logger, setup_logging
-from app.resp_encoder import encode_resp
-from app.resp_parser import parse_resp
 from app.commands.registry import CommandRegistry
-
-logger = get_logger(__name__)
-
-SERVER_ADDRESS = "localhost"
-SERVER_PORT = 6379
+from app.config import ServerConfig
+from app.data_store import DataStore
+from app.logger import setup_logging
+from app.server import RedisServer
 
 
 def main():
     setup_logging()
+    config = ServerConfig()
 
-    logger.info("Starting the server...")
-
+    # Dependencies
     data_store = DataStore()
+    registry = CommandRegistry()
+    registry.auto_discover(data_store)
 
-    commands = CommandRegistry()
-    commands.auto_discover(data_store)
-
-    with socket.create_server(
-        (SERVER_ADDRESS, SERVER_PORT), reuse_port=True
-    ) as server_socket:
-        server_socket.setblocking(False)
-        sockets_list = [server_socket]
-
-        while True:
-            ready_to_read, _, _ = select.select(sockets_list, [], [])
-
-            for ready_socket in ready_to_read:
-                if ready_socket == server_socket:
-                    connection, _ = ready_socket.accept()
-                    logger.info("Connection received from %s", connection)
-                    sockets_list.append(connection)
-                else:
-                    data = ready_socket.recv(1024)
-                    # Empty data
-                    if data == b"":
-                        logger.info("Client %s disconnected", ready_socket)
-                        sockets_list.remove(ready_socket)
-                        ready_socket.close()
-                    else:
-                        parsed_data = parse_resp(data)[0]
-                        result = commands.execute(parsed_data)
-                        encoded_result = encode_resp(result)
-                        ready_socket.sendall(encoded_result)
+    # Create and start server
+    server = RedisServer(registry, config)
+    server.start()
 
 
 if __name__ == "__main__":

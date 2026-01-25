@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, cast
+from typing import Any
 from app.commands.base import Command
 from app.data_store import DataStore
 from app.types import RESPError, RESPValue
