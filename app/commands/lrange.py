@@ -15,17 +15,11 @@ class LRangeCommand(Command):
         stop = int(args[2])
         
         list_ = self.lists[list_name]
-        
-        if not list_:
-            return []
-        
-        if start >= len(list_):
-            return []
-        
-        if stop >= len(list_):
-            stop = len(list_)
-        
-        if start > stop:
-            return []
-        
+
+        # Converting negative indexes to positive
+        if start < 0:
+            start = max(0, start + len(list_))
+        if stop < 0:
+            stop = max(0, stop + len(list_))
+
         return list_[start:stop+1]
