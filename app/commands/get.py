@@ -1,6 +1,6 @@
 from typing import Any
 from app.commands.base import Command
-from app.data_store import DataStore
+from app.data.data_store import DataStore
 
 
 class GetCommand(Command):

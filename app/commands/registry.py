@@ -1,7 +1,8 @@
 import inspect
 from typing import Any
 from app.commands.base import Command
-from app.data_store import DataStore
+from app.data.data_store import DataStore
+from app.data.lists import Lists
 from app.types import RESPError, RESPValue
 
 
@@ -44,11 +45,26 @@ class CommandRegistry:
 
         return command.execute(args)
 
-    def auto_discover(self, store: DataStore) -> None:
+    def auto_discover(self, store: DataStore, lists: Lists) -> None:
         """Find all Command subclasses and register them."""
         subclasses = Command.__subclasses__()
 
         for subclass in subclasses:
-            signature = inspect.signature(subclass.__init__)
-            instance = subclass(store) if "store" in signature.parameters else subclass()  # type: ignore[call-arg]
+            instance = self._instantiate_command(subclass, store, lists)
             self.register(instance)
+
+    def _instantiate_command(
+        self,
+        command_class: type[Command],
+        store: DataStore,
+        lists: Lists,
+    ) -> Command:
+        signature = inspect.signature(command_class.__init__)
+        params = signature.parameters
+        
+        kwargs = {}
+        if "store" in params:
+            kwargs["store"] = store
+        if "lists" in params:
+            kwargs["lists"] = lists
+        return command_class(**kwargs)

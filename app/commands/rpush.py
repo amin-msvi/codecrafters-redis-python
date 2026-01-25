@@ -1,20 +1,16 @@
 from app.commands.base import Command
+from app.data.lists import Lists
 
 
 class RPushCommand(Command):
     name = "RPUSH"
     arity = (2, float("inf"))
 
-    def __init__(self):
-        self.lists: dict[str, list] = {}
+    def __init__(self, lists: Lists):
+        self.lists: Lists = lists
 
     def execute(self, args: list[str]) -> int:
         list_name = args[0]
         list_values = args[1:]
-
-        if list_name not in self.lists:
-            self.lists[list_name] = []
-
-        for value in list_values:
-            self.lists[list_name].append(value)
+        self.lists[list_name] = list_values
         return len(self.lists[list_name])
