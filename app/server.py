@@ -49,7 +49,9 @@ class RedisServer:
                     )
 
     def _accept_connection(self) -> None:
-        connection, address = self._server_socket.accept()  # pyright: ignore [reportOptionalMemberAccess]
+        connection, address = (
+            self._server_socket.accept()  # pyright: ignore [reportOptionalMemberAccess]
+        )  
         logger.info("Connection received from %s", address)
         self._connections.append(connection)
 

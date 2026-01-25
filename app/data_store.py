@@ -1,12 +1,3 @@
-# class DataStoreKeyError(Exception):
-#     def __init__(self, key, value=None):
-#         self.key = key
-
-#         message = f"key {key} not found."
-
-#         super().__init__(message)
-
-
 from typing import Any
 from pydantic import BaseModel
 from datetime import datetime

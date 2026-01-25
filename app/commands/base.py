@@ -11,6 +11,7 @@ class Command(ABC):
     - arity: Tuple of (min_args, max_args), use float('inf') for unlimited
     - execute(): The command logic
     """
+
     name: str
     arity: tuple[int, int | float]  # (min, max) -- max can be infinity
 
