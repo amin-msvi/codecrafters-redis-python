@@ -1,6 +1,6 @@
 from typing import assert_never
 
-from app.types import EncodeableValue, RESPError, SimpleString
+from app.types import EncodeableValue, NullArray, RESPError, SimpleString
 
 
 def encode_simple_string(s: str) -> bytes:
@@ -34,6 +34,10 @@ def encode_array(items: list) -> bytes:
     return b"".join(parts)
 
 
+def encode_null_array() -> bytes:
+    return b"*-1\r\n"
+
+
 def encode_resp(value: EncodeableValue) -> bytes:
     """Generic encoder that auto-detects type and routes"""
     match value:
@@ -41,6 +45,8 @@ def encode_resp(value: EncodeableValue) -> bytes:
             return encode_simple_string(value.string)
         case RESPError():
             return encode_error(value.message)
+        case NullArray():
+            return encode_null_array()
         case str():
             return encode_bulk_string(value)
         case int():

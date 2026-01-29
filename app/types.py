@@ -24,6 +24,9 @@ class SimpleString:
 class RESPError:
     message: str
 
+class NullArray:
+    pass
+
 
 class RESPProtocolError(Exception):
     """Exception raised when RESP protocol is violated."""
@@ -56,4 +59,4 @@ class RESPProtocolError(Exception):
 
 RESPValue = str | int | list | None | RESPError
 ParseResult = tuple[RESPValue, bytes]
-EncodeableValue = str | int | list | None | RESPError | SimpleString
+EncodeableValue = str | int | list | None | RESPError | SimpleString | NullArray

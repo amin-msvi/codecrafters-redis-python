@@ -10,7 +10,7 @@ from app.data.lists import Lists
 from app.logger import get_logger
 from app.resp_encoder import encode_resp
 from app.resp_parser import parse_resp
-from app.types import RESPError, RESPProtocolError
+from app.types import NullArray, RESPError, RESPProtocolError
 
 if TYPE_CHECKING:
     from app.commands.registry import CommandRegistry
@@ -131,10 +131,10 @@ class RedisServer:
         waiter.socket.sendall(response)
 
     def _handle_expired_blockers(self) -> None:
-        """Send nil response to clients whose timeout has passed."""
+        """Send null array to clients whose timeout has passed."""
         now = datetime.now()
         for client in self._blocking_state.get_expired(now):
-            client.socket.sendall(encode_resp(None))
+            client.socket.sendall(encode_resp(NullArray()))
             self._blocking_state.remove(client)
 
     def _remove_client(self, client: socket.socket) -> None:
