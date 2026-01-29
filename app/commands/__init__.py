@@ -7,6 +7,7 @@ from app.commands.lrange import LRangeCommand  # noqa: F401
 from app.commands.lpush import LPushCommand  # noqa: F401
 from app.commands.llen import LLenCommand  # noqa: F401
 from app.commands.lpop import LPopCommand  # noqa: F401
+from app.commands.blpop import BLPopCommand  # noqa: F401
 from app.commands.registry import CommandRegistry
 
 __all__ = ["CommandRegistry"]

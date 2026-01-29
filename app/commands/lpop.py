@@ -6,10 +6,10 @@ from app.data.lists import Lists
 class LPopCommand(Command):
     name = "LPOP"
     arity = (1, 2)
-    
+
     def __init__(self, lists: Lists):
         self.lists = lists
-    
+
     def execute(self, args: list[str]) -> Any:
         list_name = args[0]
         n_to_remove = 1

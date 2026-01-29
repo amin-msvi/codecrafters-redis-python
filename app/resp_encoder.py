@@ -1,5 +1,6 @@
-from app.types import EncodeableValue, RESPError, SimpleString
 from typing import assert_never
+
+from app.types import EncodeableValue, RESPError, SimpleString
 
 
 def encode_simple_string(s: str) -> bytes:
@@ -24,10 +25,8 @@ def encode_bulk_string(s: str | None) -> bytes:
     return f"${len(s)}\r\n{s}\r\n".encode("utf-8")
 
 
-def encode_array(items: list | None) -> bytes:
+def encode_array(items: list) -> bytes:
     """Encode as *2\r\n..., recursively calling encode_resp()"""
-    if items is None:
-        return b"*-1\r\n"
     count = len(items)
     parts = [f"*{count}\r\n".encode("utf-8")]
     for item in items:

@@ -1,5 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import Any
+from dataclasses import dataclass
+
+
+@dataclass
+class BlockingResponse:
+    keys: list[str]
+    timeout: int  # 0: wait forever
 
 
 class Command(ABC):

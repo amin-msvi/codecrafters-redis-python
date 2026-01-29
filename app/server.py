@@ -1,7 +1,10 @@
+from datetime import datetime, timedelta
 import select
 import socket
 from typing import TYPE_CHECKING
 
+from app.blocking import BlockingState, WaitingClient
+from app.commands.base import BlockingResponse
 from app.config import DEFAULT_SERVER_CONFIG, ServerConfig
 from app.logger import get_logger
 from app.resp_encoder import encode_resp
@@ -16,12 +19,16 @@ logger = get_logger(__name__)
 
 class RedisServer:
     def __init__(
-        self, registry: "CommandRegistry", config: ServerConfig = DEFAULT_SERVER_CONFIG
+        self,
+        registry: "CommandRegistry",
+        config: ServerConfig = DEFAULT_SERVER_CONFIG,
+        blocking_state: BlockingState | None = None,
     ):
         self._config = config
         self._registry = registry
         self._server_socket: socket.socket | None = None
         self._connections: list[socket.socket] = []
+        self._blocking_state = blocking_state or BlockingState()
 
     def start(self) -> None:
         logger.info("Starting server on %s:%d", self._config.host, self._config.port)
@@ -47,11 +54,15 @@ class RedisServer:
                     self._handle_client(
                         ready_socket  # pyright: ignore [reportArgumentType]
                     )
+            for client in self._blocking_state.get_timed_out():
+                client.socket.sendall(encode_resp(None))
+                self._blocking_state.remove_waiter(client)
+                self._remove_client(client.socket)
 
     def _accept_connection(self) -> None:
         connection, address = (
             self._server_socket.accept()  # pyright: ignore [reportOptionalMemberAccess]
-        )  
+        )
         logger.info("Connection received from %s", address)
         self._connections.append(connection)
 
@@ -62,19 +73,33 @@ class RedisServer:
             self._remove_client(client)
             return
 
-        response = self._process_request(data)
-        client.sendall(response)
+        response = self._process_request(data, client)
 
-    def _process_request(self, data: bytes) -> bytes:
+        if response:
+            client.sendall(response)
+
+    def _add_to_blocking(self, response: BlockingResponse, client: socket.socket):
+        timeout = (
+            datetime.now() + timedelta(seconds=response.timeout)
+            if response.timeout != 0
+            else None  # Infinity
+        )
+        waiting = WaitingClient(socket=client, keys=response.keys, timeout_at=timeout)
+        self._blocking_state.add_waiting(waiting)
+
+    def _process_request(self, data: bytes, client: socket.socket) -> bytes | None:
         """Parse, execute, and encode a request."""
         try:
             parsed_data = parse_resp(data)[0]
             result = self._registry.execute(parsed_data)
+            if isinstance(result, BlockingResponse):
+                self._add_to_blocking(result, client)
+            else:
+                return encode_resp(result)
         except RESPProtocolError as e:
             logger.warning("Protocol error: %s", e)
             result = RESPError("ERR protocol error")
-
-        return encode_resp(result)
+            return encode_resp(result)
 
     def _remove_client(self, client: socket.socket) -> None:
         """Clean up a disconnected client."""

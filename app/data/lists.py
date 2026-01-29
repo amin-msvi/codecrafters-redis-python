@@ -1,8 +1,7 @@
-
 class Lists:
     def __init__(self) -> None:
         self.array: dict[str, list] = {}
-    
+
     def __getitem__(self, item: str) -> list:
         if not self.__contains__(item):
             self.array[item] = []
@@ -15,7 +14,7 @@ class Lists:
 
     def __contains__(self, item: str):
         return item in self.array
-    
+
     def lset(self, item: str, values: list[str]) -> None:
         """Prepending elements to the list"""
         list_ = self.__getitem__(item)
