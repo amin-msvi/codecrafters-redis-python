@@ -4,15 +4,19 @@ from app.data.lists import Lists
 
 class BLPopCommand(Command):
     name = "BLPOP"
-    arity = (1, 2)
+    arity = (2, float("inf"))
 
     def __init__(self, lists: Lists):
         self.lists = lists
 
     def execute(self, args: list[str]) -> list | BlockingResponse:
-        list_name = args[0]
-        timeout = int(args[1])
-        if list_name in self.lists:
-            return [list_name, self.lists[list_name].pop(0)]
-        else:
-            return BlockingResponse(keys=[list_name], timeout=timeout)
+        keys = args[:-1]
+        timeout = float(args[-1])
+
+        for key in keys:
+            if key in self.lists and len(self.lists[key]) > 0:
+                value = self.lists[key].pop(0)
+                return [key, value]
+
+        # No data available - signal to block
+        return BlockingResponse(keys=keys, timeout=timeout)

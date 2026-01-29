@@ -1,4 +1,3 @@
-from app.blocking import BlockingState
 from app.commands.registry import CommandRegistry
 from app.config import ServerConfig
 from app.data.data_store import DataStore
@@ -14,12 +13,11 @@ def main():
     # Dependencies
     data_store = DataStore()
     lists = Lists()
-    blocking_state = BlockingState()
     registry = CommandRegistry()
-    registry.auto_discover(data_store, lists, blocking_state)
+    registry.auto_discover(data_store, lists)
 
     # Create and start server
-    server = RedisServer(registry, config, blocking_state)
+    server = RedisServer(registry, lists, config)
     server.start()
 
 

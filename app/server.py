@@ -1,11 +1,12 @@
-from datetime import datetime, timedelta
 import select
 import socket
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 from app.blocking import BlockingState, WaitingClient
-from app.commands.base import BlockingResponse
+from app.commands.base import BlockingResponse, UnblockEvent
 from app.config import DEFAULT_SERVER_CONFIG, ServerConfig
+from app.data.lists import Lists
 from app.logger import get_logger
 from app.resp_encoder import encode_resp
 from app.resp_parser import parse_resp
@@ -21,14 +22,15 @@ class RedisServer:
     def __init__(
         self,
         registry: "CommandRegistry",
+        lists: Lists,
         config: ServerConfig = DEFAULT_SERVER_CONFIG,
-        blocking_state: BlockingState | None = None,
     ):
         self._config = config
         self._registry = registry
+        self._lists = lists
         self._server_socket: socket.socket | None = None
         self._connections: list[socket.socket] = []
-        self._blocking_state = blocking_state or BlockingState()
+        self._blocking_state = BlockingState()
 
     def start(self) -> None:
         logger.info("Starting server on %s:%d", self._config.host, self._config.port)
@@ -45,7 +47,7 @@ class RedisServer:
     def _run_event_loop(self) -> None:
         while True:
             all_sockets = [self._server_socket] + self._connections
-            ready_to_read, _, _ = select.select(all_sockets, [], [])
+            ready_to_read, _, _ = select.select(all_sockets, [], [], 0.1)
 
             for ready_socket in ready_to_read:
                 if ready_socket == self._server_socket:
@@ -54,10 +56,8 @@ class RedisServer:
                     self._handle_client(
                         ready_socket  # pyright: ignore [reportArgumentType]
                     )
-            for client in self._blocking_state.get_timed_out():
-                client.socket.sendall(encode_resp(None))
-                self._blocking_state.remove_waiter(client)
-                self._remove_client(client.socket)
+
+            self._handle_expired_blockers()
 
     def _accept_connection(self) -> None:
         connection, address = (
@@ -78,28 +78,64 @@ class RedisServer:
         if response:
             client.sendall(response)
 
-    def _add_to_blocking(self, response: BlockingResponse, client: socket.socket):
-        timeout = (
-            datetime.now() + timedelta(seconds=response.timeout)
-            if response.timeout != 0
-            else None  # Infinity
-        )
-        waiting = WaitingClient(socket=client, keys=response.keys, timeout_at=timeout)
-        self._blocking_state.add_waiting(waiting)
-
     def _process_request(self, data: bytes, client: socket.socket) -> bytes | None:
         """Parse, execute, and encode a request."""
         try:
             parsed_data = parse_resp(data)[0]
             result = self._registry.execute(parsed_data)
+
+            event = None
+            if isinstance(result, tuple):
+                result, event = result
+
             if isinstance(result, BlockingResponse):
-                self._add_to_blocking(result, client)
-            else:
-                return encode_resp(result)
+                self._add_blocker(result, client)
+                return None
+
+            # Command produced data - check for waiters
+            if isinstance(event, UnblockEvent):
+                self._try_unblock(event.key)
+
+            return encode_resp(result)
+
         except RESPProtocolError as e:
             logger.warning("Protocol error: %s", e)
-            result = RESPError("ERR protocol error")
-            return encode_resp(result)
+            return encode_resp(RESPError("ERR protocol error"))
+
+    def _add_blocker(self, response: BlockingResponse, client: socket.socket) -> None:
+        """Register a client as blocked waiting for keys."""
+        timeout_at = (
+            datetime.now() + timedelta(seconds=response.timeout)
+            if response.timeout != 0
+            else None  # Wait forever
+        )
+        waiter = WaitingClient(
+            socket=client,
+            keys=response.keys,
+            timeout_at=timeout_at,
+        )
+        self._blocking_state.add(waiter)
+
+    def _try_unblock(self, key: str) -> None:
+        """Wake the first waiter for a key if data exists."""
+        waiter = self._blocking_state.pop(key)
+        if waiter is None:
+            return
+
+        # Check if data still exists (could have been consumed)
+        if key not in self._lists or len(self._lists[key]) == 0:
+            return
+
+        value = self._lists[key].pop(0)
+        response = encode_resp([key, value])
+        waiter.socket.sendall(response)
+
+    def _handle_expired_blockers(self) -> None:
+        """Send nil response to clients whose timeout has passed."""
+        now = datetime.now()
+        for client in self._blocking_state.get_expired(now):
+            client.socket.sendall(encode_resp(None))
+            self._blocking_state.remove(client)
 
     def _remove_client(self, client: socket.socket) -> None:
         """Clean up a disconnected client."""

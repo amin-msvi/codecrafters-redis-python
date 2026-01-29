@@ -1,6 +1,6 @@
 import inspect
 from typing import Any
-from app.blocking import BlockingState
+
 from app.commands.base import Command
 from app.data.data_store import DataStore
 from app.data.lists import Lists
@@ -46,14 +46,12 @@ class CommandRegistry:
 
         return command.execute(args)
 
-    def auto_discover(
-        self, store: DataStore, lists: Lists, blocking_state: BlockingState
-    ) -> None:
+    def auto_discover(self, store: DataStore, lists: Lists) -> None:
         """Find all Command subclasses and register them."""
         subclasses = Command.__subclasses__()
 
         for subclass in subclasses:
-            instance = self._instantiate_command(subclass, store, lists, blocking_state)
+            instance = self._instantiate_command(subclass, store, lists)
             self.register(instance)
 
     def _instantiate_command(
@@ -61,7 +59,6 @@ class CommandRegistry:
         command_class: type[Command],
         store: DataStore,
         lists: Lists,
-        blocking_state: BlockingState,
     ) -> Command:
         signature = inspect.signature(command_class.__init__)
         params = signature.parameters
@@ -71,6 +68,4 @@ class CommandRegistry:
             kwargs["store"] = store
         if "lists" in params:
             kwargs["lists"] = lists
-        if "blocking_state" in params:
-            kwargs["blocking_state"] = blocking_state
         return command_class(**kwargs)

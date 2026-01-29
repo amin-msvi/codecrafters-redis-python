@@ -4,12 +4,6 @@ from app.data.data_store import DataStore
 
 
 class GetCommand(Command):
-    """
-    GET key
-
-    Returns the value of key, or None if key doesn't exist.
-    """
-
     name = "GET"
     arity = (1, 1)  # Exactly 1 argument
 
