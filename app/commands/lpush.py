@@ -1,17 +1,17 @@
 from app.commands.base import Command, UnblockEvent
-from app.data.lists import Lists
+from app.data.key_space import KeySpace
+from app.data.list_helper import ListOps
 
 
 class LPushCommand(Command):
     name = "LPUSH"
     arity = (2, float("inf"))
 
-    def __init__(self, lists: Lists):
-        self.lists = lists
+    def __init__(self, keyspace: KeySpace):
+        self.list_ops = ListOps(keyspace)
 
     def execute(self, args: list[str]) -> tuple[int, UnblockEvent]:
-        list_name = args[0]
-        list_values = args[1:]
-        self.lists.lset(list_name, list_values)
-        length = len(self.lists[list_name])
-        return length, UnblockEvent(key=list_name)
+        key = args[0]
+        values = args[1:]
+        length = self.list_ops.lpush(key, values)
+        return length, UnblockEvent(key=key)

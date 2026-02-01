@@ -1,25 +1,18 @@
-from typing_extensions import Any
 from app.commands.base import Command
-from app.data.data_store import DataStore
+from app.data.key_space import KeySpace
 from app.types import SimpleString
-from app.commands.get import GetCommand
 
 
 class TypeCommand(Command):
     name = "TYPE"
     arity = (1, 1)
     
-    def __init__(self, store: DataStore) -> None:
-        self.store = store
+    def __init__(self, keyspace: KeySpace) -> None:
+        self.keyspace = keyspace
     
     def execute(self, args: list[str]) -> SimpleString:
         key = args[0]
-        value = self._get_value(key)
+        value = self.keyspace.get(key)
         if value:
-            if isinstance(value, str):
-                return SimpleString("string")
+            return SimpleString(value.dtype)
         return SimpleString("none")
-    
-    def _get_value(self, key) -> Any:
-       return GetCommand(self.store).execute([key])
-       

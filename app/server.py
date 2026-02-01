@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from app.blocking import BlockingState, WaitingClient
 from app.commands.base import BlockingResponse, UnblockEvent
 from app.config import DEFAULT_SERVER_CONFIG, ServerConfig
-from app.data.lists import Lists
+from app.data.key_space import KeySpace
 from app.logger import get_logger
 from app.resp_encoder import encode_resp
 from app.resp_parser import parse_resp
@@ -22,12 +22,12 @@ class RedisServer:
     def __init__(
         self,
         registry: "CommandRegistry",
-        lists: Lists,
+        keyspace: KeySpace,
         config: ServerConfig = DEFAULT_SERVER_CONFIG,
     ):
         self._config = config
         self._registry = registry
-        self._lists = lists
+        self.keyspace = keyspace
         self._server_socket: socket.socket | None = None
         self._connections: list[socket.socket] = []
         self._blocking_state = BlockingState()
@@ -113,6 +113,7 @@ class RedisServer:
             socket=client,
             keys=response.keys,
             timeout_at=timeout_at,
+            callback=response.unblock_callback
         )
         self._blocking_state.add(waiter)
 
@@ -121,12 +122,12 @@ class RedisServer:
         waiter = self._blocking_state.pop(key)
         if waiter is None:
             return
-
-        # Check if data still exists (could have been consumed)
-        if key not in self._lists or len(self._lists[key]) == 0:
+        
+        result = waiter.callback(key)
+        if result is None:
             return
-
-        value = self._lists[key].pop(0)
+            
+        key, value = result
         response = encode_resp([key, value])
         waiter.socket.sendall(response)
 

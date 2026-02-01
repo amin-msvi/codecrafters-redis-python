@@ -1,6 +1,7 @@
 import socket
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any, Callable
 
 
 @dataclass
@@ -8,6 +9,7 @@ class WaitingClient:
     socket: socket.socket
     keys: list[str]
     timeout_at: datetime | None
+    callback: Callable[[str], tuple[str, Any] | None]
 
 
 class BlockingState:

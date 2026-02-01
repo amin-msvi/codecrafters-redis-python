@@ -1,8 +1,9 @@
 from typing import Any
 from app.commands.base import Command
-from app.data.data_store import DataStore, DataValue
+from app.data.key_space import KeySpace
 from datetime import datetime, timedelta
 
+from app.data.string_helper import StringOps
 from app.types import SimpleString
 
 
@@ -14,12 +15,13 @@ class SetCommand(Command):
     name = "SET"
     arity = (2, float("inf"))
 
-    def __init__(self, store: DataStore):
-        self.store = store
+    def __init__(self, keyspace: KeySpace):
+        self.string_ops = StringOps(keyspace)
 
     def execute(self, args: list[str]) -> Any:
-        data_value = DataValue(value=args[1], expiry_date=self._get_expiry(args))
-        self.store.set(key=args[0], value=data_value)
+        key = args[0]
+        value = args[1]
+        self.string_ops.set(key, value, self._get_expiry(args))
         return SimpleString("OK")
 
     def _get_expiry(self, args: list) -> datetime | None:

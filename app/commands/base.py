@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 
 
 @dataclass
 class BlockingResponse:
     keys: list[str]
     timeout: float  # 0 = wait forever
+    unblock_callback: Callable[[str], tuple[str, Any] | None]
 
 
 @dataclass
