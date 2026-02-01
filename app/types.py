@@ -24,6 +24,7 @@ class SimpleString:
 class RESPError:
     message: str
 
+
 class NullArray:
     pass
 

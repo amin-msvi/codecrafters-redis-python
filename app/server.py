@@ -113,7 +113,7 @@ class RedisServer:
             socket=client,
             keys=response.keys,
             timeout_at=timeout_at,
-            callback=response.unblock_callback
+            callback=response.unblock_callback,
         )
         self._blocking_state.add(waiter)
 
@@ -122,11 +122,11 @@ class RedisServer:
         waiter = self._blocking_state.pop(key)
         if waiter is None:
             return
-        
+
         result = waiter.callback(key)
         if result is None:
             return
-            
+
         key, value = result
         response = encode_resp([key, value])
         waiter.socket.sendall(response)

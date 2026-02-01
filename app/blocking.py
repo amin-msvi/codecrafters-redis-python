@@ -60,10 +60,11 @@ class BlockingState:
 
         for waiters in self._waiters.values():
             for waiter in waiters:
-                if (id(waiter) not in seen and
-                    waiter.timeout_at and
-                    waiter.timeout_at < now
-                    ):
+                if (
+                    id(waiter) not in seen
+                    and waiter.timeout_at
+                    and waiter.timeout_at < now
+                ):
                     expired.append(waiter)
                     seen.add(id(waiter))
 

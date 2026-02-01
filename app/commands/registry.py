@@ -54,9 +54,7 @@ class CommandRegistry:
             self.register(instance)
 
     def _instantiate_command(
-        self,
-        command_class: type[Command],
-        keyspace: KeySpace
+        self, command_class: type[Command], keyspace: KeySpace
     ) -> Command:
         signature = inspect.signature(command_class.__init__)
         params = signature.parameters

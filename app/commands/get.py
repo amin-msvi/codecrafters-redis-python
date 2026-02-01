@@ -19,5 +19,7 @@ class GetCommand(Command):
         if isinstance(val, RESPError):
             return val
         if not isinstance(val, str):
-            return RESPError("WRONGTYPE Operation against a key holding the wrong kind of value")
+            return RESPError(
+                "WRONGTYPE Operation against a key holding the wrong kind of value"
+            )
         return val
