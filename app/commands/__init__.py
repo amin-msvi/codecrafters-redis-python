@@ -9,6 +9,7 @@ from app.commands.llen import LLenCommand
 from app.commands.lpop import LPopCommand
 from app.commands.blpop import BLPopCommand
 from app.commands.type import TypeCommand
+from app.commands.xadd import XaddCommand
 from app.commands.registry import CommandRegistry
 
 __all__ = ["CommandRegistry"]
