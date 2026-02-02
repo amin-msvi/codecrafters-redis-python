@@ -2,7 +2,7 @@ import inspect
 from typing import Any
 
 from app.commands.base import Command
-from app.data.key_space import KeySpace
+from app.data.db import DataBase
 from app.types import RESPError, RESPValue
 
 
@@ -45,21 +45,21 @@ class CommandRegistry:
 
         return command.execute(args)
 
-    def auto_discover(self, keyspace: KeySpace) -> None:
+    def auto_discover(self, database: DataBase) -> None:
         """Find all Command subclasses and register them."""
         subclasses = Command.__subclasses__()
 
         for subclass in subclasses:
-            instance = self._instantiate_command(subclass, keyspace)
+            instance = self._instantiate_command(subclass, database)
             self.register(instance)
 
     def _instantiate_command(
-        self, command_class: type[Command], keyspace: KeySpace
+        self, command_class: type[Command], database: DataBase
     ) -> Command:
         signature = inspect.signature(command_class.__init__)
         params = signature.parameters
 
         kwargs = {}
-        if "keyspace" in params:
-            kwargs["keyspace"] = keyspace
+        if "database" in params:
+            kwargs["database"] = database
         return command_class(**kwargs)

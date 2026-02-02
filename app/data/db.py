@@ -9,7 +9,7 @@ class RedisValue(BaseModel):
     expiry: datetime | None = None
 
 
-class KeySpace:
+class DataBase:
     def __init__(self):
         self.store: dict[str, RedisValue] = {}
 

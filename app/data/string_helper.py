@@ -1,14 +1,14 @@
 from datetime import datetime
-from app.data.key_space import KeySpace, RedisValue
+from app.data.db import DataBase, RedisValue
 from app.types import RESPError
 
 
 class StringOps:
-    def __init__(self, keyspace: KeySpace):
-        self._keyspace = keyspace
+    def __init__(self, database: DataBase):
+        self._database = database
 
     def get(self, key: str):
-        redis_val = self._keyspace.get(key)
+        redis_val = self._database.get(key)
 
         if not redis_val:
             return None
@@ -21,7 +21,7 @@ class StringOps:
 
     def set(self, key: str, value: str, expiry: datetime | None):
         redis_val = RedisValue(dtype="string", data=value, expiry=expiry)
-        self._keyspace.set(key, redis_val)
+        self._database.set(key, redis_val)
 
     def has_data(self, key: str) -> bool:
-        return self._keyspace.exists(key)
+        return self._database.exists(key)

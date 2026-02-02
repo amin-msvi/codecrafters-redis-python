@@ -1,6 +1,6 @@
 from typing import Any
 from app.commands.base import Command
-from app.data.key_space import KeySpace
+from app.data.db import DataBase
 from datetime import datetime, timedelta
 
 from app.data.string_helper import StringOps
@@ -15,8 +15,8 @@ class SetCommand(Command):
     name = "SET"
     arity = (2, float("inf"))
 
-    def __init__(self, keyspace: KeySpace):
-        self.string_ops = StringOps(keyspace)
+    def __init__(self, database: DataBase):
+        self.string_ops = StringOps(database)
 
     def execute(self, args: list[str]) -> Any:
         key = args[0]

@@ -1,7 +1,7 @@
 from app.commands.registry import CommandRegistry
 from app.config import ServerConfig
 
-from app.data.key_space import KeySpace
+from app.data.db import DataBase
 from app.logger import setup_logging
 from app.server import RedisServer
 
@@ -11,12 +11,12 @@ def main():
     config = ServerConfig()
 
     # Dependencies
-    key_space = KeySpace()
+    database = DataBase()
     registry = CommandRegistry()
-    registry.auto_discover(key_space)
+    registry.auto_discover(database)
 
     # Create and start server
-    server = RedisServer(registry, key_space, config)
+    server = RedisServer(registry, config)
     server.start()
 
 

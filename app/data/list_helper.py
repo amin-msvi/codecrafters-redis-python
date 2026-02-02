@@ -1,9 +1,9 @@
-from app.data.key_space import KeySpace, RedisValue
+from app.data.db import DataBase, RedisValue
 
 
 class ListOps:
-    def __init__(self, keyspace: KeySpace):
-        self._keyspace = keyspace
+    def __init__(self, database: DataBase):
+        self._database = database
 
     def lpush(self, key: str, values: list) -> int:
         """Prepend values to list and return new length"""
@@ -51,17 +51,17 @@ class ListOps:
 
     # Private methods
     def _get_or_create(self, key):
-        val = self._keyspace.get(key)
+        val = self._database.get(key)
         if val is None:
             val = RedisValue(dtype="list", data=[])
-            self._keyspace.set(key, val)
+            self._database.set(key, val)
             return val
         if val.dtype != "list":
             raise TypeError(f"WRONGTYPE {key} is not a list")
         return val
 
     def _get_list(self, key: str) -> RedisValue | None:
-        val = self._keyspace.get(key)
+        val = self._database.get(key)
         if val is None:
             return None
         if val.dtype != "list":
