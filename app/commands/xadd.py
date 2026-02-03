@@ -16,8 +16,8 @@ class XaddCommand(Command):
         stream_key = args[0]
         stream_id = args[1]
         pairs = self._get_pairs(args[2:])
-        err = self.stream_ops.set(stream_key, stream_id, pairs)
-        return stream_id if not err else err      
+        result = self.stream_ops.set(stream_key, stream_id, pairs)
+        return result  
     
     def _get_pairs(self, pairs: list) -> dict:
         return parse_args(pairs)
