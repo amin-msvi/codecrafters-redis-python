@@ -80,15 +80,19 @@ class StreamOps:
             start_ts, start_seq = "0", "0"
         else:
             start_ts, start_seq = self._split_id(start_id)
-            
-        end_ts, end_seq = self._split_id(end_id)
+        
+        if end_id == "+":
+            end_ts, end_seq = float('inf'), float('inf')
+        else:
+            end_ts, end_seq = self._split_id(end_id)
+            end_ts, end_seq = int(end_ts), int(end_seq)
         start_seq = start_seq if start_seq else "0"
         
         range_list = []
         for stream in redis_val.data:
             ts, seq = self._split_id(stream["id"])
-            if int(start_ts) <= int(ts) <= int(end_ts):
-                if end_seq and int(start_seq) <= int(seq) <= int(end_seq):
+            if int(start_ts) <= int(ts) <= end_ts:
+                if end_seq and int(start_seq) <= int(seq) <= end_seq:
                     range_list.append(stream)
                 elif not end_seq and int(start_seq) <= int(seq):
                     range_list.append(stream)
