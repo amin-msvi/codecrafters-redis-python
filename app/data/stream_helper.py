@@ -71,6 +71,33 @@ class StreamOps:
             new_seq = str(int(top_seq) + 1) if top_ts == new_ts else "0"
         return new_ts + "-" + new_seq if new_seq else "0"
 
+    def xrange(self, key: str, start_id: str, end_id: str) -> list | None:
+        redis_val = self.get(key)
+        if not(redis_val and redis_val.data):
+            return
+        
+        start_ts, start_seq = self._split_id(start_id)
+        end_ts, end_seq = self._split_id(end_id)
+        start_seq = start_seq if start_seq else "0"
+        
+        range_list = []
+        for stream in redis_val.data:
+            ts, seq = self._split_id(stream["id"])
+            if int(start_ts) <= int(ts) <= int(end_ts):
+                if end_seq and int(start_seq) <= int(seq) <= int(end_seq):
+                    range_list.append(stream)
+                elif not end_seq and int(start_seq) <= int(seq):
+                    range_list.append(stream)
+        return self._xrange_format(range_list)
+    
+    def _xrange_format(self, streams: list[dict]):
+        final = []
+        for stream in streams:
+            id = stream.pop("id")
+            pairs = [item for pair in stream.items() for item in pair]
+            final.append([id, pairs])
+        return final
+        
     @staticmethod
     def _split_id(id: str) -> tuple[str, str | None]:
         """Splits the string defined id to separate millisecond timestamp and sequence number"""

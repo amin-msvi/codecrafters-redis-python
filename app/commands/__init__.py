@@ -10,6 +10,7 @@ from app.commands.lpop import LPopCommand
 from app.commands.blpop import BLPopCommand
 from app.commands.type import TypeCommand
 from app.commands.xadd import XaddCommand
+from app.commands.xrange import XRangeCommand
 from app.commands.registry import CommandRegistry
 
 __all__ = ["CommandRegistry"]
