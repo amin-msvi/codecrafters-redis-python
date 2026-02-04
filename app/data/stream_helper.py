@@ -33,13 +33,13 @@ class StreamOps:
             return RESPError("The ID specified in XADD must be greater than 0-0")
 
         if top := self._get_top(key):
-            new_ts, new_seq = map(int, top["id"].split("-"))
-            if new_ts > int(new_ts):
+            top_ts, top_seq = map(int, top["id"].split("-"))
+            if top_ts > int(new_ts):
                 return RESPError(
                     "The ID specified in XADD is equal or smaller than the target stream top item"
                 )
-            elif new_ts == int(new_ts):
-                if int(new_seq) <= new_seq:
+            elif top_ts == int(new_ts):
+                if int(new_seq) <= top_seq:
                     return RESPError(
                         "The ID specified in XADD is equal or smaller than the target stream top item"
                     )
