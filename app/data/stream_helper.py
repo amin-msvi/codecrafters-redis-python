@@ -76,7 +76,11 @@ class StreamOps:
         if not(redis_val and redis_val.data):
             return
         
-        start_ts, start_seq = self._split_id(start_id)
+        if start_id == "-":
+            start_ts, start_seq = "0", "0"
+        else:
+            start_ts, start_seq = self._split_id(start_id)
+            
         end_ts, end_seq = self._split_id(end_id)
         start_seq = start_seq if start_seq else "0"
         
