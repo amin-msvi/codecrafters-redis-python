@@ -1,4 +1,4 @@
-from random import randint
+from datetime import datetime
 from typing import Any
 
 from app.data.db import DataBase, RedisValue
@@ -14,32 +14,32 @@ class StreamOps:
 
     def set(self, key: str, new_id: str, pairs: dict[str, Any]) -> RESPError | str:
         redis_val = self._get_or_create(key)
-        # id = id if id != "*" else self._generate_id()
         if err := self._validate(key, new_id):
             return err
         new_id = self._get_id(key, new_id)
-        data = {"id": new_id, **pairs}
-        redis_val.data.append(data)
+        redis_val.data.append({"id": new_id, **pairs})
         self._database.set(key, RedisValue(dtype="stream", data=redis_val.data))
         return new_id
 
     # Private methods
     def _validate(self, key: str, new_id: str) -> RESPError | None:
-        new_id_mill_sec, new_id_seq_num = self._split_id(new_id)
-        if not new_id_mill_sec or not new_id_seq_num:
-            return None
+        if new_id == "*":
+            return
+        new_ts, new_seq = self._split_id(new_id)
+        if not new_ts or not new_seq:
+            return
 
         if new_id == "0-0":
             return RESPError("The ID specified in XADD must be greater than 0-0")
 
         if top := self._get_top(key):
-            mill_sec, seq_num = map(int, top["id"].split("-"))
-            if mill_sec > int(new_id_mill_sec):
+            new_ts, new_seq = map(int, top["id"].split("-"))
+            if new_ts > int(new_ts):
                 return RESPError(
                     "The ID specified in XADD is equal or smaller than the target stream top item"
                 )
-            elif mill_sec == int(new_id_mill_sec):
-                if int(new_id_seq_num) <= seq_num:
+            elif new_ts == int(new_ts):
+                if int(new_seq) <= new_seq:
                     return RESPError(
                         "The ID specified in XADD is equal or smaller than the target stream top item"
                     )
@@ -48,43 +48,46 @@ class StreamOps:
         if id == "0-*":
             return "0-1"
 
-        new_mill_sec, new_seq_num = self._split_id(id)
-
         top = self._get_top(key)
-        top_mill_sec, top_seq_num = self._split_id(top["id"]) if top else (None, None)
+        top_ts, top_seq = self._split_id(top["id"]) if top else (None, None)
 
-        if not top_seq_num and not new_seq_num:
-            new_seq_num = "0"
-        elif top_seq_num and not new_seq_num:
-            if top_mill_sec == new_mill_sec:
-                new_seq_num = str(int(top_seq_num) + 1)
-            elif top_mill_sec != new_mill_sec:
-                new_seq_num = "0"
-        elif top_seq_num and new_seq_num:
-            pass
-        elif not top_seq_num and new_seq_num:
-            pass
+        if id == "*":
+            if top_ts and top_seq:
+                new_ts = self._ts_now()
+                new_seq = "0" if new_ts != top_ts else str(int(top_seq) + 1)
+                return new_ts + "-" + new_seq
+            else:
+                return self._ts_now() + "-" + "0"
+        else:
+            new_ts, new_seq = self._split_id(id)
+        
 
-        return new_mill_sec + "-" + new_seq_num
+        # auto-generating first entry in the stream
+        if not top_seq and not new_seq:
+            new_seq = "0"
+        # auto-generating next sequence entry in the existing stream
+        elif top_seq and not new_seq:
+            # Increment for identical timestamp otherwise initialize with 0
+            new_seq = str(int(top_seq) + 1) if top_ts == new_ts else "0"
+        return new_ts + "-" + new_seq if new_seq else "0"
 
     @staticmethod
-    def _split_id(id: str) -> tuple[str | None, str | None]:
-        mill_sec, seq_num = id.split("-")
-        if mill_sec == "*":
-            mill_sec = None
-        if seq_num == "*":
-            seq_num = None
-        return mill_sec, seq_num
-        
-            
+    def _split_id(id: str) -> tuple[str, str | None]:
+        """Splits the string defined id to separate millisecond timestamp and sequence number"""
+        ts, seq = id.split("-")
+        if seq == "*":
+            seq = None
+        return ts, seq
+
+    @staticmethod
+    def _ts_now() -> str:
+        return str(int(datetime.now().timestamp() * 1000))
+
     def _get_top(self, key: str) -> dict | None:
         redis_val = self.get(key)
         if redis_val and redis_val.data:
             return redis_val.data[-1]
         return None
-
-    def _generate_id(self) -> str:
-        return str(randint(1, 100))
 
     def _get_or_create(self, key) -> RedisValue:
         val = self._database.get(key)
