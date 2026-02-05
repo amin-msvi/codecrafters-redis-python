@@ -5,10 +5,10 @@ from app.types import RESPError
 
 class StringOps:
     def __init__(self, database: DataBase):
-        self._database = database
+        self._db = database
 
     def get(self, key: str):
-        redis_val = self._database.get(key)
+        redis_val = self._db.get(key)
 
         if not redis_val:
             return None
@@ -21,7 +21,7 @@ class StringOps:
 
     def set(self, key: str, value: str, expiry: datetime | None):
         redis_val = RedisValue(dtype="string", data=value, expiry=expiry)
-        self._database.set(key, redis_val)
+        self._db.set(key, redis_val)
 
     def has_data(self, key: str) -> bool:
-        return self._database.exists(key)
+        return self._db.exists(key)

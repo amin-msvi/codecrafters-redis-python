@@ -42,24 +42,23 @@ class RedisServer:
             self._shutdown()
 
     def _run_event_loop(self) -> None:
+        assert self._server_socket is not None
+
         while True:
-            all_sockets = [self._server_socket] + self._connections
+            all_sockets: list[socket.socket] = [self._server_socket] + self._connections
             ready_to_read, _, _ = select.select(all_sockets, [], [], 0.1)
 
             for ready_socket in ready_to_read:
                 if ready_socket == self._server_socket:
                     self._accept_connection()
                 else:
-                    self._handle_client(
-                        ready_socket  # pyright: ignore [reportArgumentType]
-                    )
+                    self._handle_client(ready_socket)
 
             self._handle_expired_blockers()
 
     def _accept_connection(self) -> None:
-        connection, address = (
-            self._server_socket.accept()  # pyright: ignore [reportOptionalMemberAccess]
-        )
+        assert self._server_socket is not None
+        connection, address = self._server_socket.accept()
         logger.info("Connection received from %s", address)
         self._connections.append(connection)
 

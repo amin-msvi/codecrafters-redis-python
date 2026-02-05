@@ -1,9 +1,10 @@
+from dataclasses import dataclass
 from typing import Any
-from pydantic import BaseModel
 from datetime import datetime
 
 
-class RedisValue(BaseModel):
+@dataclass
+class RedisValue:
     dtype: str
     data: Any
     expiry: datetime | None = None

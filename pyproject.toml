@@ -8,3 +8,8 @@ dependencies = [
 
 [tool.ruff.lint.per-file-ignores]
 "app/commands/__init__.py" = ["F401"]
+
+[dependency-groups]
+dev = [
+    "ty>=0.0.15",
+]
