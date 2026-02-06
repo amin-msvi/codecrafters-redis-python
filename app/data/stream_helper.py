@@ -55,14 +55,13 @@ class StreamOps:
             List of entries in the range (empty if stream doesn't exist)
         """
         stream = self._get_stream(key)
-        if not stream:
-            return []
 
         return stream.range(
             start=StreamID.parse(start_id),
             end=StreamID.parse(end_id),
-        )
+        ) if stream else []
 
+    # Private Methods
     def _get_stream(self, key: str) -> Stream | None:
         """Get a stream from the database, or None if it doesn't exist."""
         redis_val = self._db.get(key)

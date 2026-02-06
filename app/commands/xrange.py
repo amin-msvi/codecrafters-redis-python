@@ -12,13 +12,13 @@ class XRangeCommand(Command):
     def __init__(self, database: DataBase):
         self.stream_ops = StreamOps(database)
 
-    def execute(self, args: list[str]) -> Any:
+    def execute(self, args: list[str]) -> list[StreamEntry | None]:
         key = args[0]
         start_id = args[1]
         end_id = args[2]
-        result = self.stream_ops.range(key, start_id, end_id)
-        return self._format_stream(result)
+        result = self.stream_ops.xrange(key, start_id, end_id)
+        return self._format(result)
 
     @staticmethod
-    def _format_stream(entries: list[StreamEntry]) -> list[Any]:
+    def _format(entries: list[StreamEntry]) -> list[Any]:
         return [entry.format() for entry in entries]
