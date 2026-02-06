@@ -13,14 +13,20 @@ class XReadCommand(Command):
         self.stream_ops = StreamOps(database)
     
     def execute(self, args: list[str]) -> Any:
-        # type_ = args[0]
-        key = args[1]
-        id = args[2]
-        entries = self.stream_ops.xread(key, id)
-        if not entries:
-            return []
-        return self._format(key, entries)
+        keys, ids = self._pairs(args[1:])
+
+        final = []
+        for key, id in zip(keys, ids):
+            entry = self.stream_ops.xread(key, id)
+            if entry:
+                final.append(self._format(key, entry))
+        return final
 
     @staticmethod
     def _format(key, entries: list[StreamEntry]) -> list[Any]:
-        return [[key, [entry.format()]] for entry in entries]
+        return [key] + [[entry.format() for entry in entries]]
+    
+    @staticmethod
+    def _pairs(args: list[str]) -> tuple[list[str], list[str]]:
+        mid = len(args) // 2
+        return args[:mid], args[mid:]
