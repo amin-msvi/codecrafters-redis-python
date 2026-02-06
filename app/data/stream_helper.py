@@ -42,7 +42,7 @@ class StreamOps:
             return RESPError(str(e))  # Domain error -> RESP error
         return id
 
-    def range(self, key: str, start_id: str, end_id: str) -> list[StreamEntry]:
+    def xrange(self, key: str, start_id: str, end_id: str) -> list[StreamEntry]:
         """
         Get entries in a range.
 
@@ -60,6 +60,13 @@ class StreamOps:
             start=StreamID.parse(start_id),
             end=StreamID.parse(end_id),
         ) if stream else []
+
+    def xread(self, key: str, id: str) -> list[StreamEntry] | None:
+        """Get entry for an id"""
+        stream = self._get_stream(key)
+        if not stream:
+            return None
+        return stream.read(StreamID.parse(id))
 
     # Private Methods
     def _get_stream(self, key: str) -> Stream | None:

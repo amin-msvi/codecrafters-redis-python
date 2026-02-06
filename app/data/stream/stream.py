@@ -63,6 +63,10 @@ class Stream:
         # in the range
         return [ent for ent in self._entries if start <= ent.id <= end]
 
+    def read(self, id: StreamID) -> list[StreamEntry]:
+        """Get IDs for a specific id"""
+        return [entry for entry in self._entries if entry.id >= id]
+
     def __len__(self) -> int:
         """Return number of entries in the stream."""
         return len(self._entries)
