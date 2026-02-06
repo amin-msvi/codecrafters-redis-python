@@ -16,4 +16,5 @@ class StreamEntry:
     fields: dict[str, str]
 
     def format(self) -> list:
+        """Format for RESP response."""
         return [str(self.id), [field for pair in self.fields.items() for field in pair]]

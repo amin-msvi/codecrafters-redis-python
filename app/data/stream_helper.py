@@ -39,8 +39,7 @@ class StreamOps:
         try:
             stream.add(entry)
         except ValueError as e:
-            return RESPError(str(e))
-
+            return RESPError(str(e))  # Domain error -> RESP error
         return id
 
     def range(self, key: str, start_id: str, end_id: str) -> list[StreamEntry]:
@@ -67,9 +66,7 @@ class StreamOps:
     def _get_stream(self, key: str) -> Stream | None:
         """Get a stream from the database, or None if it doesn't exist."""
         redis_val = self._db.get(key)
-        if redis_val:
-            return redis_val.data
-        return
+        return redis_val.data if redis_val else None
 
     def _get_or_create_stream(self, key: str) -> Stream:
         """Get existing stream or create a new empty one."""

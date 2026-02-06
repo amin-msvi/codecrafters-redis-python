@@ -148,41 +148,35 @@ class StreamIDGenerator:
 
     @staticmethod
     def _is_full_auto(pattern) -> bool:
-        if pattern == "*":
-            return True
-        return False
+        return pattern == "*"
 
     @staticmethod
     def _is_sequence_auto(pattern) -> bool:
         if "-" in pattern:
             _, seq = pattern.split("-")
-            if seq == "*":
-                return True
+            return seq == "*"
         return False
 
     def _generate_full_auto(self, top_id: StreamID | None) -> StreamID:
         ts = self._current_timestamp_ms()
         if not top_id:
             return StreamID(ts, 0)
-
         if ts == top_id.timestamp:
-            seq = top_id.sequence + 1
-        else:
-            seq = 0
-        return StreamID(ts, seq)
+            return StreamID(ts, top_id.sequence + 1)
+        return StreamID(ts, 0)
 
     def _generate_sequence_auto(
         self, timestamp: int, top_id: StreamID | None
     ) -> StreamID:
         if top_id and top_id.timestamp == timestamp:
-            return StreamID(timestamp=timestamp, sequence=top_id.sequence + 1)
+            return StreamID(timestamp, top_id.sequence + 1)
         if timestamp == 0:
-            return StreamID(timestamp=timestamp, sequence=1)
-        return StreamID(timestamp=timestamp, sequence=0)
+            # Special case for Redis: Illegal 0-0 -> Returns 0-1
+            return StreamID(timestamp, 1)
+        return StreamID(timestamp, 0)
 
     @staticmethod
     def _current_timestamp_ms() -> int:
         """Return current time in milliseconds since epoch."""
         from datetime import datetime
-
         return int(datetime.now().timestamp()) * 1000

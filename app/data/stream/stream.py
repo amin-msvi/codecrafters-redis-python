@@ -30,8 +30,7 @@ class Stream:
 
         Invariant: Entries are always in ascending ID order.
         """
-        top_id = self.top_id()
-        if entry.id.is_valid_successor_to(top_id):
+        if entry.id.is_valid_successor_to(self.top_id()):
             self._entries.append(entry)
 
     def top(self) -> StreamEntry | None:
@@ -62,11 +61,7 @@ class Stream:
         # TODO: I'll get back here to implement binary serach
         # Need to think how to find the inclusive start and end or the nearest
         # in the range
-        range_list = []
-        for entry in self._entries:
-            if start <= entry.id <= end:
-                range_list.append(entry)
-        return range_list
+        return [ent for ent in self._entries if start <= ent.id <= end]
 
     def __len__(self) -> int:
         """Return number of entries in the stream."""
