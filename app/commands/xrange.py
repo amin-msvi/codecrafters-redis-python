@@ -21,7 +21,4 @@ class XRangeCommand(Command):
 
     @staticmethod
     def _format_stream(entries: list[StreamEntry]) -> list[Any]:
-        final = []
-        for entry in entries:
-            final.append(entry.format())
-        return final
+        return [entry.format() for entry in entries]
