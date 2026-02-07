@@ -53,7 +53,6 @@ class XReadCommand(Command):
         if responses:
             return responses
 
-        # Need to block - build a callback that remembers that IDs
         ids_by_key = dict(zip(keys, ids))
 
         def unblock_for_xread(key: str) -> list[Any] | None:
@@ -81,7 +80,7 @@ class XReadCommand(Command):
     @staticmethod
     def _parse_streams_args(
         args: list[str],
-    ) -> tuple[list[Any], list[Any], float | None] | RESPError:
+    ) -> tuple[list[str], list[str], float | None] | RESPError:
         # if len(args) % 2 != 0:
         #     return RESPError(
         #         f"ERR unbalanced XREAD list of streams: {args}"
