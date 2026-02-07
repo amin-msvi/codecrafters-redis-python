@@ -60,7 +60,10 @@ class XReadCommand(Command):
 
         # Read immediately
         responses = []
-        for key, stream_id in zip(keys, ids):
+        for i, (key, stream_id) in enumerate(zip(keys, ids)):
+            if ids[i] == "$":
+                ids[i] = str(self.stream_ops.top_id(key))
+                stream_id = ids[i]
             entries = self.stream_ops.xread(key, stream_id)
             if entries:
                 responses.append(self._format_stream(key, entries))

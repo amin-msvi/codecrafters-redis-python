@@ -71,6 +71,11 @@ class StreamOps:
     def has_data(self, key: str) -> bool:
         return self._get_stream(key) is not None
 
+    def top_id(self, key: str) -> StreamID | None:
+        stream = self._get_stream(key)
+        if stream:
+            return stream.top_id()
+
     # Private Methods
     def _get_stream(self, key: str) -> Stream | None:
         """Get a stream from the database, or None if it doesn't exist."""
