@@ -123,9 +123,12 @@ class RedisServer:
         if result is None:
             return
 
-        key, value = result
-        response = encode_resp([key, value])
-        waiter.socket.sendall(response)
+        if isinstance(result, tuple):
+            key, value = result
+            waiter.socket.sendall(encode_resp([key, value]))
+
+        if isinstance(result, list):
+            waiter.socket.sendall(encode_resp(result))
 
     def _handle_expired_blockers(self) -> None:
         """Send null array to clients whose timeout has passed."""

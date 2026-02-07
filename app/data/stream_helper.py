@@ -68,6 +68,9 @@ class StreamOps:
             return None
         return stream.read(StreamID.parse(id))
 
+    def has_data(self, key: str) -> bool:
+        return self._get_stream(key) is not None
+
     # Private Methods
     def _get_stream(self, key: str) -> Stream | None:
         """Get a stream from the database, or None if it doesn't exist."""

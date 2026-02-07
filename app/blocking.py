@@ -9,7 +9,7 @@ class WaitingClient:
     socket: socket.socket
     keys: list[str]
     timeout_at: datetime | None
-    callback: Callable[[str], tuple[str, Any] | None]
+    callback: Callable[[str], tuple[str, Any] | None | list[Any]]
 
 
 class BlockingState:

@@ -7,7 +7,7 @@ from typing import Any, Callable
 class BlockingResponse:
     keys: list[str]
     timeout: float  # 0 = wait forever
-    unblock_callback: Callable[[str], tuple[str, Any] | None]
+    unblock_callback: Callable[[str], tuple[str, Any] | list[Any] | None]
 
 
 @dataclass
