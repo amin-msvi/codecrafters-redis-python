@@ -179,4 +179,5 @@ class StreamIDGenerator:
     def _current_timestamp_ms() -> int:
         """Return current time in milliseconds since epoch."""
         from datetime import datetime
+
         return int(datetime.now().timestamp()) * 1000

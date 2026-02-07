@@ -56,10 +56,14 @@ class StreamOps:
         """
         stream = self._get_stream(key)
 
-        return stream.range(
-            start=StreamID.parse(start_id),
-            end=StreamID.parse(end_id),
-        ) if stream else []
+        return (
+            stream.range(
+                start=StreamID.parse(start_id),
+                end=StreamID.parse(end_id),
+            )
+            if stream
+            else []
+        )
 
     def xread(self, key: str, id: str) -> list[StreamEntry] | None:
         """Get entry for an id"""
