@@ -7,13 +7,13 @@ class ListOps:
 
     def lpush(self, key: str, values: list) -> int:
         """Prepend values to list and return new length"""
-        redis_val = self._get_or_create(key)
+        redis_val = self._get_or_create_list(key)
         redis_val.data = values[::-1] + redis_val.data
         return len(redis_val.data)
 
     def rpush(self, key: str, values: list) -> int:
         """Append values to list and return new length"""
-        redis_val = self._get_or_create(key)
+        redis_val = self._get_or_create_list(key)
         redis_val.data.extend(values)
         return len(redis_val.data)
 
@@ -50,7 +50,7 @@ class ListOps:
         return redis_val is not None and len(redis_val.data) > 0
 
     # Private methods
-    def _get_or_create(self, key):
+    def _get_or_create_list(self, key):
         val = self._db.get(key)
         if val is None:
             val = RedisValue(dtype="list", data=[])

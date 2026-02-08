@@ -12,6 +12,7 @@ from app.commands.type import TypeCommand
 from app.commands.xadd import XaddCommand
 from app.commands.xrange import XRangeCommand
 from app.commands.xread import XReadCommand
+from app.commands.incr import IncrCommand
 from app.commands.registry import CommandRegistry
 
 __all__ = ["CommandRegistry"]
