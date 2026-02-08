@@ -20,7 +20,7 @@ class CommandRegistry:
         """Look up a command by name"""
         return self._commands.get(name)
 
-    def execute(self, command_input: RESPValue) -> Any:
+    def execute(self, command_input: RESPValue) -> RESPError | Any:
         """Main entry point - parse input, validate, and execute."""
         if command_input is None:
             return RESPError("empty command")

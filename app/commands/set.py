@@ -1,4 +1,3 @@
-from typing import Any
 from app.commands.base import Command
 from app.data.db import DataBase
 from datetime import datetime, timedelta
@@ -19,7 +18,7 @@ class SetCommand(Command):
     def __init__(self, database: DataBase):
         self.string_ops = StringOps(database)
 
-    def execute(self, args: list[str]) -> Any:
+    def execute(self, args: list[str]) -> SimpleString:
         key = args[0]
         value = args[1]
         self.string_ops.set(key, value, self._get_expiry(args[2:]))
