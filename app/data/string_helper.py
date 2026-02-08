@@ -29,16 +29,17 @@ class StringOps:
     def incr(self, key: str) -> int | RESPError:
         value = self._get_or_create_string(key)
         try:
-            value.data = int(value.data) + 1
+            value.data = str(int(value.data) + 1)
         except TypeError:
             return RESPError(
                 f"key does not contain numerical value: {type(value.data)}"
             )
-        return value.data
+        return int(value.data)
 
     # Private methods
     def _get_or_create_string(self, key: str) -> RedisValue:
-        value = self._db.get(key)
-        if not value:
-            value = RedisValue(dtype="string", data=0)
-        return value
+        redis_val = self._db.get(key)
+        if not redis_val:
+            redis_val = RedisValue(dtype="string", data=0)
+            self._db.set(key, redis_val)
+        return redis_val
