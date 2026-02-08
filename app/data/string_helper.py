@@ -28,11 +28,12 @@ class StringOps:
 
     def incr(self, key: str) -> int | RESPError:
         value = self._get_or_create_string(key)
-        try:
+        if value.data.isdigit():
             value.data = str(int(value.data) + 1)
-        except TypeError:
+        else:
+            print("CAUGHT ERROR")
             return RESPError(
-                f"key does not contain numerical value: {type(value.data)}"
+                "value is not an integer or out of range"
             )
         return int(value.data)
 
@@ -40,6 +41,6 @@ class StringOps:
     def _get_or_create_string(self, key: str) -> RedisValue:
         redis_val = self._db.get(key)
         if not redis_val:
-            redis_val = RedisValue(dtype="string", data=0)
+            redis_val = RedisValue(dtype="string", data="0")
             self._db.set(key, redis_val)
         return redis_val
