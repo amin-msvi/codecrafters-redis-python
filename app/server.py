@@ -9,7 +9,7 @@ from app.config import DEFAULT_SERVER_CONFIG, ServerConfig
 from app.logger import get_logger
 from app.resp_encoder import encode_resp
 from app.resp_parser import parse_resp
-from app.types import NullArray, RESPError, RESPProtocolError
+from app.types import NullArray, RESPError, RESPProtocolError, RESPValue, SimpleString
 
 if TYPE_CHECKING:
     from app.commands.registry import CommandRegistry
@@ -28,6 +28,7 @@ class RedisServer:
         self._server_socket: socket.socket | None = None
         self._connections: list[socket.socket] = []
         self._blocking_state = BlockingState()
+        self._transactions: dict[socket.socket, list[RESPValue]] = {}
 
     def start(self) -> None:
         logger.info("Starting server on %s:%d", self._config.host, self._config.port)
@@ -79,6 +80,22 @@ class RedisServer:
         """Parse, execute, and encode a request."""
         try:
             parsed_data = parse_resp(data)[0]
+            
+            if isinstance(parsed_data, list):
+                if parsed_data[0].upper() == "MULTI":
+                    self._transactions[client] = []
+                    return encode_resp(SimpleString("OK"))
+            
+            if isinstance(parsed_data, list):
+                if parsed_data[0].upper() == "EXEC":
+                    result = self._execute_transaction_commands(client)
+                    return encode_resp(result)
+
+            if client in self._transactions:
+                self._transactions[client].append(parsed_data)
+                return encode_resp(SimpleString("QUEUED"))
+            
+
             result = self._registry.execute(parsed_data)
 
             event = None
@@ -98,6 +115,20 @@ class RedisServer:
             logger.warning("Protocol error: %s", e)
             return encode_resp(RESPError("ERR protocol error"))
 
+    # Transaction-related Methods
+    def _execute_transaction_commands(self, client: socket.socket):
+        args = self._transactions.get(client)
+        results = []
+        if args is None:
+            return RESPError("EXEC without MULTI")
+        if args == []:
+            del self._transactions[client]
+            return []
+        for arg in args:
+            results.append(self._registry.execute(arg))
+        del self._transactions[client]
+        return results
+            
     # Blocking-related Methods
     def _add_blocker(self, response: BlockingResponse, client: socket.socket) -> None:
         """Register a client as blocked waiting for keys."""
