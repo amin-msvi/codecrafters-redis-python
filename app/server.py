@@ -41,6 +41,7 @@ class RedisServer:
         finally:
             self._shutdown()
 
+    # Private Methods
     def _run_event_loop(self) -> None:
         assert self._server_socket is not None
 
@@ -88,7 +89,6 @@ class RedisServer:
                 self._add_blocker(result, client)
                 return None
 
-            # Command produced data - check for waiters
             if isinstance(event, UnblockEvent):
                 self._try_unblock(event.key)
 
@@ -98,6 +98,7 @@ class RedisServer:
             logger.warning("Protocol error: %s", e)
             return encode_resp(RESPError("ERR protocol error"))
 
+    # Blocking-related Methods
     def _add_blocker(self, response: BlockingResponse, client: socket.socket) -> None:
         """Register a client as blocked waiting for keys."""
         timeout_at = (
