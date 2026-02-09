@@ -90,6 +90,14 @@ class RedisServer:
                 if parsed_data[0].upper() == "EXEC":
                     result = self._execute_transaction_commands(client)
                     return encode_resp(result)
+            
+            if isinstance(parsed_data, list):
+                if parsed_data[0].upper() == "DISCARD":
+                    if client in self._transactions:
+                        del self._transactions[client]
+                        return encode_resp(SimpleString("OK"))
+                    else:
+                        return encode_resp(RESPError("DISCARD without MULTI"))
 
             if client in self._transactions:
                 self._transactions[client].append(parsed_data)
