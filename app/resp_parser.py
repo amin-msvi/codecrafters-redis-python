@@ -1,5 +1,5 @@
 from app.types import ParseResult, RESPError, RESPProtocolError
-from app.config import DEFAULT_PARSER_CONFIG
+from app.config import DEFAULT_RESP_PARSER_CONFIG
 
 
 def parse_bulk_string(data: bytes) -> tuple[str | None, bytes]:
@@ -32,9 +32,9 @@ def parse_bulk_string(data: bytes) -> tuple[str | None, bytes]:
             "Invalid bulk string: could not parse length", data=data, position=1
         )
 
-    if length > DEFAULT_PARSER_CONFIG.max_bulk_string_length:
+    if length > DEFAULT_RESP_PARSER_CONFIG.max_bulk_string_length:
         raise RESPProtocolError(
-            f"Bulk string length {length} exceeds maximum allowed {DEFAULT_PARSER_CONFIG.max_bulk_string_length}"
+            f"Bulk string length {length} exceeds maximum allowed {DEFAULT_RESP_PARSER_CONFIG.max_bulk_string_length}"
         )
 
     # Handle null bulk string
@@ -248,7 +248,7 @@ def parse_array(
 
 
 def parse_resp(
-    data: bytes, depth: int = 0, max_depth: int = DEFAULT_PARSER_CONFIG.max_array_depth
+    data: bytes, depth: int = 0, max_depth: int = DEFAULT_RESP_PARSER_CONFIG.max_array_depth
 ) -> ParseResult:
     """
     Parse one RESP value from data.

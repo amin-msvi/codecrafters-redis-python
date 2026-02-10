@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from app.blocking import BlockingState, WaitingClient
 from app.commands.base import BlockingResponse, UnblockEvent
-from app.config import DEFAULT_SERVER_CONFIG, ServerConfig
+from app.config import ServerConfig
 from app.logger import get_logger
 from app.resp_encoder import encode_resp
 from app.resp_parser import parse_resp
@@ -21,7 +21,7 @@ class RedisServer:
     def __init__(
         self,
         registry: "CommandRegistry",
-        config: ServerConfig = DEFAULT_SERVER_CONFIG,
+        config: ServerConfig,
     ):
         self._config = config
         self._registry = registry

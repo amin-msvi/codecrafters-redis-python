@@ -1,3 +1,4 @@
+from argparse import ArgumentParser, Namespace
 from app.commands.registry import CommandRegistry
 from app.config import ServerConfig
 
@@ -6,9 +7,17 @@ from app.logger import setup_logging
 from app.server import RedisServer
 
 
+def parse_cli_args() -> Namespace:
+    parser = ArgumentParser(description="Redis server")
+    parser.add_argument("--port", type=int, default=6379, help="Port to listen on")
+    return parser.parse_args()
+
+
 def main():
     setup_logging()
-    config = ServerConfig()
+    
+    args = parse_cli_args()
+    config = ServerConfig(port=args.port)
 
     # Dependencies
     database = DataBase()
