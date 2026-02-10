@@ -37,7 +37,6 @@ class CommandRegistry:
         if command is None:
             return RESPError(message=f"Unknown command '{command_input[0]}'")
 
-        # Check validation result
         error = command.validate(args)
         if error:
             return RESPError(message=error)
