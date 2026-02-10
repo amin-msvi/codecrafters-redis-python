@@ -20,9 +20,12 @@ def main():
     config = ServerConfig(port=args.port)
 
     # Dependencies
-    database = DataBase()
     registry = CommandRegistry()
-    registry.auto_discover(database)
+    dependencies = {
+        ServerInfo: ServerInfo(),
+        DataBase: DataBase(),
+    }
+    registry.auto_discover(dependencies)
 
     # Create and start server
     server = RedisServer(registry, config)

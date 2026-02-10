@@ -2,7 +2,6 @@ import inspect
 from typing import Any
 
 from app.commands.base import Command
-from app.data.db import DataBase
 from app.types import RESPError, RESPValue
 
 
@@ -45,21 +44,24 @@ class CommandRegistry:
 
         return command.execute(args)
 
-    def auto_discover(self, database: DataBase) -> None:
+    def auto_discover(self, dependencies: dict[type, Any]) -> None:
         """Find all Command subclasses and register them."""
         subclasses = Command.__subclasses__()
 
         for subclass in subclasses:
-            instance = self._instantiate_command(subclass, database)
+            instance = self._instantiate_command(subclass, dependencies)
             self.register(instance)
 
     def _instantiate_command(
-        self, command_class: type[Command], database: DataBase
+        self, command_class: type[Command], dependencies: dict[type, Any]
     ) -> Command:
         signature = inspect.signature(command_class.__init__)
         params = signature.parameters
 
         kwargs = {}
-        if "database" in params:
-            kwargs["database"] = database
+        for name, param in params.items():
+            if name == "self":
+                continue
+            if param.annotation in dependencies:
+                kwargs[name] = dependencies[param.annotation]
         return command_class(**kwargs)
