@@ -5,17 +5,20 @@ from app.config import ServerConfig
 from app.data.db import DataBase
 from app.logger import setup_logging
 from app.server import RedisServer
+from app.server_info import ServerInfo
 
 
 def parse_cli_args() -> Namespace:
     parser = ArgumentParser(description="Redis server")
-    parser.add_argument("--port", type=int, default=6379, help="Port to listen on")
+    parser.add_argument(
+        "-p", "--port", type=int, default=6379, help="Port to listen on"
+    )
     return parser.parse_args()
 
 
 def main():
     setup_logging()
-    
+
     args = parse_cli_args()
     config = ServerConfig(port=args.port)
 
