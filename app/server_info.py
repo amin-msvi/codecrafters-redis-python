@@ -15,15 +15,16 @@ class InfoSection:
 class Server(InfoSection):
     pass
 
+
 @dataclass
 class Replication(InfoSection):
     role: str
 
 
-
 @dataclass
 class Clients(InfoSection):
     pass
+
 
 @dataclass
 class Memory(InfoSection):

@@ -80,17 +80,17 @@ class RedisServer:
         """Parse, execute, and encode a request."""
         try:
             parsed_data = parse_resp(data)[0]
-            
+
             if isinstance(parsed_data, list):
                 if parsed_data[0].upper() == "MULTI":
                     self._transactions[client] = []
                     return encode_resp(SimpleString("OK"))
-            
+
             if isinstance(parsed_data, list):
                 if parsed_data[0].upper() == "EXEC":
                     result = self._execute_transaction_commands(client)
                     return encode_resp(result)
-            
+
             if isinstance(parsed_data, list):
                 if parsed_data[0].upper() == "DISCARD":
                     if client in self._transactions:
@@ -102,7 +102,6 @@ class RedisServer:
             if client in self._transactions:
                 self._transactions[client].append(parsed_data)
                 return encode_resp(SimpleString("QUEUED"))
-            
 
             result = self._registry.execute(parsed_data)
 
@@ -136,7 +135,7 @@ class RedisServer:
             results.append(self._registry.execute(arg))
         del self._transactions[client]
         return results
-            
+
     # Blocking-related Methods
     def _add_blocker(self, response: BlockingResponse, client: socket.socket) -> None:
         """Register a client as blocked waiting for keys."""

@@ -248,7 +248,9 @@ def parse_array(
 
 
 def parse_resp(
-    data: bytes, depth: int = 0, max_depth: int = DEFAULT_RESP_PARSER_CONFIG.max_array_depth
+    data: bytes,
+    depth: int = 0,
+    max_depth: int = DEFAULT_RESP_PARSER_CONFIG.max_array_depth,
 ) -> ParseResult:
     """
     Parse one RESP value from data.
