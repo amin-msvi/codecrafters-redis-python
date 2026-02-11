@@ -1,6 +1,7 @@
 from dataclasses import field, dataclass, fields
 
 
+
 @dataclass
 class InfoSection:
     def format(self):
@@ -18,7 +19,7 @@ class Server(InfoSection):
 
 @dataclass
 class Replication(InfoSection):
-    role: str
+    role: str = field(default_factory=lambda: "master")
 
 
 @dataclass
@@ -34,6 +35,6 @@ class Memory(InfoSection):
 @dataclass
 class ServerInfo:
     server: Server | None = None
-    replication: Replication = field(default_factory=lambda: Replication(role="master"))
+    replication: Replication = field(default_factory=Replication)
     clients: Clients | None = None
     memory: Memory | None = None
