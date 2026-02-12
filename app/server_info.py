@@ -41,3 +41,19 @@ class ServerInfo:
     replication: Replication = field(default_factory=Replication)
     clients: Clients | None = None
     memory: Memory | None = None
+
+
+@dataclass
+class MasterInfo:
+    host: str | None
+    port: int | None
+
+    @classmethod
+    def from_string(cls, string: str | None) -> "MasterInfo | None":
+        if string is None:
+            return None
+        info = string.split(" ")
+        if len(info) != 2:
+            raise ValueError("server info must be '<host> <port>'")
+        host, port = info[0], int(info[1])
+        return cls(host=host, port=port)

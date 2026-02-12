@@ -9,6 +9,7 @@ from app.config import ServerConfig
 from app.logger import get_logger
 from app.resp_encoder import encode_resp
 from app.resp_parser import parse_resp
+from app.server_info import MasterInfo
 from app.types import NullArray, RESPError, RESPProtocolError, RESPValue, SimpleString
 
 if TYPE_CHECKING:
@@ -22,6 +23,7 @@ class RedisServer:
         self,
         registry: "CommandRegistry",
         config: ServerConfig,
+        master_info: MasterInfo | None,
     ):
         self._config = config
         self._registry = registry
@@ -29,6 +31,23 @@ class RedisServer:
         self._connections: list[socket.socket] = []
         self._blocking_state = BlockingState()
         self._transactions: dict[socket.socket, list[RESPValue]] = {}
+        self.master_info = master_info
+        self._master_socket = None
+
+    def connect_to_server(self):
+        if self.master_info is None:
+            return
+        
+        self._master_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            self._master_socket.connect((self.master_info.host, self.master_info.port))
+            logger.info(
+                f"Connected to master server at '{self.master_info.host}:{self.master_info.port}'"
+            )
+            
+            self._master_socket.sendall(encode_resp(["PING"]))
+        except socket.error as e:
+            logger.error("Connection Failed", e)
 
     def start(self) -> None:
         logger.info("Starting server on %s:%d", self._config.host, self._config.port)
@@ -36,7 +55,9 @@ class RedisServer:
             (self._config.host, self._config.port), reuse_port=True
         )
         self._server_socket.setblocking(False)
-
+        
+        self.connect_to_server()
+        
         try:
             self._run_event_loop()
         finally:
@@ -48,11 +69,15 @@ class RedisServer:
 
         while True:
             all_sockets: list[socket.socket] = [self._server_socket] + self._connections
+            if self._master_socket:
+                all_sockets.append(self._master_socket)
             ready_to_read, _, _ = select.select(all_sockets, [], [], 0.1)
 
             for ready_socket in ready_to_read:
                 if ready_socket == self._server_socket:
                     self._accept_connection()
+                elif ready_socket == self._master_socket:
+                    pass
                 else:
                     self._handle_client(ready_socket)
 
