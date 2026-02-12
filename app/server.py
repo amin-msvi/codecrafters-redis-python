@@ -45,7 +45,28 @@ class RedisServer:
                 f"Connected to master server at '{self.master_info.host}:{self.master_info.port}'"
             )
             
+            # Handshake step 1
             self._master_socket.sendall(encode_resp(["PING"]))
+            data = self._master_socket.recv(1024)
+            if parse_resp(data)[0] != "PONG":
+                return
+                
+            # Handshake step 2
+            replconf: bytes = encode_resp(["REPLCONF", "listening-port", str(self._config.port)])
+            self._master_socket.sendall(replconf)
+            data = self._master_socket.recv(1024)
+            if parse_resp(data)[0] != "OK":
+                return
+
+            replconf = encode_resp(["REPLCONF", "capa", "psync2"])
+            self._master_socket.sendall(replconf)
+            data = self._master_socket.recv(1024)
+            if parse_resp(data)[0] != "OK":
+                return
+
+            # Handshake step 3
+            # TODO
+
         except socket.error as e:
             logger.error("Connection Failed", e)
 
