@@ -65,7 +65,10 @@ class RedisServer:
                 return
 
             # Handshake step 3
-            # TODO
+            psync: bytes = encode_resp(["PSYNC", "?", "-1"])
+            self._master_socket.sendall(psync)
+            data = self._master_socket.recv(1024)
+            master_response = parse_resp(data)[0]
 
         except socket.error as e:
             logger.error("Connection Failed", e)
