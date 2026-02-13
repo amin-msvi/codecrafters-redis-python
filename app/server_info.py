@@ -21,7 +21,7 @@ class Server(InfoSection):
 @dataclass
 class Replication(InfoSection):
     role: str = field(default_factory=lambda: "master")
-    master_replid: UUID = field(default_factory=uuid4)
+    master_replid: str = field(default_factory=lambda: uuid4().hex)
     master_repl_offset: int = field(default_factory=lambda: 0)
 
 

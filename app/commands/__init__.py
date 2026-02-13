@@ -15,6 +15,7 @@ from app.commands.xread import XReadCommand
 from app.commands.incr import IncrCommand
 from app.commands.info import InfoCommand
 from app.commands.replconf import ReplConfCommand
+from app.commands.psync import PSyncCommand
 
 from app.commands.registry import CommandRegistry
 
