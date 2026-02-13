@@ -1,7 +1,7 @@
 import inspect
 from typing import Any
 
-from app.commands.base import Command
+from app.commands.base import Command, CommandFlags
 from app.types import RESPError, RESPValue
 
 
@@ -50,6 +50,10 @@ class CommandRegistry:
         for subclass in subclasses:
             instance = self._instantiate_command(subclass, dependencies)
             self.register(instance)
+
+    def get_flags(self, name: str) -> CommandFlags | None:
+        command = self.get(name)
+        return command.flags if command else None
 
     def _instantiate_command(
         self, command_class: type[Command], dependencies: dict[type, Any]

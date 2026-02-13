@@ -1,5 +1,5 @@
 from typing import Any
-from app.commands.base import BlockingResponse, Command
+from app.commands.base import BlockingResponse, Command, CommandFlags
 from app.data.db import DataBase
 from app.data.list_helper import ListOps
 
@@ -7,6 +7,7 @@ from app.data.list_helper import ListOps
 class BLPopCommand(Command):
     name = "BLPOP"
     arity = (2, float("inf"))
+    flags = CommandFlags(write=True)
 
     def __init__(self, database: DataBase):
         self.list_ops = ListOps(database)

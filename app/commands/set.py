@@ -1,4 +1,4 @@
-from app.commands.base import Command
+from app.commands.base import Command, CommandFlags
 from app.data.db import DataBase
 from datetime import datetime, timedelta
 
@@ -14,6 +14,7 @@ class SetCommand(Command):
 
     name = "SET"
     arity = (2, float("inf"))
+    flags = CommandFlags(write=True)
 
     def __init__(self, database: DataBase):
         self.string_ops = StringOps(database)

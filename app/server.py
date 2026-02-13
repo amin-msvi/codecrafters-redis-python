@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
 from app.blocking import BlockingState, WaitingClient
-from app.commands.base import BlockingResponse, UnblockEvent
+from app.commands.base import BlockingResponse, CommandFlags, UnblockEvent
 from app.commands.psync import RDBSync
 from app.config import ServerConfig
 from app.logger import get_logger
@@ -82,8 +82,6 @@ class RedisServer:
     def _handle_client(self, client: socket.socket) -> None:
         data = client.recv(self._config.recv_buffer_size)
 
-        self._handle_replicas(data)
-
         if data == b"":
             self._remove_client(client)
             return
@@ -100,19 +98,26 @@ class RedisServer:
             else:
                 client.sendall(response)
 
-    def _handle_replicas(self, data: bytes):
-        if self._replicas:
+            self._handle_replicas(data)
+
+    def _handle_replicas(self, data: bytes) -> None:
+        _, _, cmd_flags = self._get_command_info(data)
+        if self._replicas and cmd_flags and cmd_flags.write:
             for replica in self._replicas:
                 replica.sendall(data)
+
+    def _get_command_info(self, data: bytes) -> tuple[str, list, CommandFlags | None]:
+        parsed_data = parse_resp(data)[0]
+        assert isinstance(parsed_data, list)
+        cmd = parsed_data[0].upper()
+        cmd_flags = self._registry.get_flags(cmd)
+        return cmd, parsed_data, cmd_flags
 
     def _process_request(self, data: bytes, client: socket.socket) -> tuple[bytes, bytes] | bytes | None:
         """Parse, execute, and encode a request."""
         try:
-            parsed_data = parse_resp(data)[0]
-
+            cmd, parsed_data, _ = self._get_command_info(data)
             # Transactions
-            assert isinstance(parsed_data, list)
-            cmd = parsed_data[0].upper()
             if cmd == "MULTI":
                 self._transactions[client] = []
                 return encode_resp(SimpleString("OK"))

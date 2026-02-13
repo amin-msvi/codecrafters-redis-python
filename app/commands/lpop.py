@@ -1,5 +1,5 @@
 from typing import Any
-from app.commands.base import Command
+from app.commands.base import Command, CommandFlags
 from app.data.db import DataBase
 from app.data.list_helper import ListOps
 
@@ -7,6 +7,7 @@ from app.data.list_helper import ListOps
 class LPopCommand(Command):
     name = "LPOP"
     arity = (1, 2)
+    flags = CommandFlags(write=True)
 
     def __init__(self, database: DataBase):
         self.list_ops = ListOps(database)

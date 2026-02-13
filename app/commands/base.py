@@ -15,6 +15,11 @@ class UnblockEvent:
     key: str
 
 
+@dataclass
+class CommandFlags:
+    write: bool = False
+
+
 class Command(ABC):
     """
     Abstract base class for all Redis commands.
@@ -27,6 +32,7 @@ class Command(ABC):
 
     name: str
     arity: tuple[int, int | float]  # (min, max) -- max can be infinity
+    flags: CommandFlags = CommandFlags()
 
     @abstractmethod
     def execute(self, args: list[str]) -> Any:
