@@ -28,6 +28,10 @@ class RESPError:
 class NullArray:
     pass
 
+@dataclass
+class RDB:
+    string: str | None
+
 
 class RESPProtocolError(Exception):
     """Exception raised when RESP protocol is violated."""
@@ -60,4 +64,4 @@ class RESPProtocolError(Exception):
 
 RESPValue = str | int | list | None | RESPError
 ParseResult = tuple[RESPValue, bytes]
-EncodeableValue = str | int | list | None | RESPError | SimpleString | NullArray
+EncodeableValue = str | int | list | None | RESPError | SimpleString | NullArray | RDB

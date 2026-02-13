@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from app.blocking import BlockingState, WaitingClient
 from app.commands.base import BlockingResponse, UnblockEvent
+from app.commands.psync import RDBSync
 from app.config import ServerConfig
 from app.logger import get_logger
 from app.resp_encoder import encode_resp
@@ -123,9 +124,13 @@ class RedisServer:
         response = self._process_request(data, client)
 
         if response:
-            client.sendall(response)
+            if isinstance(response, tuple):
+                client.sendall(response[0])
+                client.sendall(response[1])
+            else:
+                client.sendall(response)
 
-    def _process_request(self, data: bytes, client: socket.socket) -> bytes | None:
+    def _process_request(self, data: bytes, client: socket.socket) -> tuple[bytes, bytes] | bytes | None:
         """Parse, execute, and encode a request."""
         try:
             parsed_data = parse_resp(data)[0]
@@ -165,6 +170,9 @@ class RedisServer:
 
             if isinstance(event, UnblockEvent):
                 self._try_unblock(event.key)
+
+            if isinstance(result, RDBSync):
+                return encode_resp(result.response), encode_resp(result.rdb)
 
             return encode_resp(result)
 
