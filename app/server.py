@@ -26,14 +26,18 @@ class RedisServer:
         config: ServerConfig,
         master_info: MasterInfo | None,
     ):
+        # General attributes of a Redis server
         self._config = config
         self._registry = registry
         self._server_socket: socket.socket | None = None
         self._connections: list[socket.socket] = []
         self._blocking_state = BlockingState()
         self._transactions: dict[socket.socket, list[RESPValue]] = {}
+        # Attributes when this server is a replica
         self.master_info = master_info
         self._master_socket = None
+        # Attributes when this server is a master
+        self._replicas: list[socket.socket] = []
 
     def start(self) -> None:
         logger.info("Starting server on %s:%d", self._config.host, self._config.port)
@@ -78,6 +82,8 @@ class RedisServer:
     def _handle_client(self, client: socket.socket) -> None:
         data = client.recv(self._config.recv_buffer_size)
 
+        self._handle_replicas(data)
+
         if data == b"":
             self._remove_client(client)
             return
@@ -89,9 +95,15 @@ class RedisServer:
             if isinstance(response, tuple):
                 client.sendall(response[0])
                 client.sendall(response[1])
+                self._replicas.append(client)
             # Normal -> resp
             else:
                 client.sendall(response)
+
+    def _handle_replicas(self, data: bytes):
+        if self._replicas:
+            for replica in self._replicas:
+                replica.sendall(data)
 
     def _process_request(self, data: bytes, client: socket.socket) -> tuple[bytes, bytes] | bytes | None:
         """Parse, execute, and encode a request."""
@@ -145,6 +157,10 @@ class RedisServer:
     
     # Server Connection Method
     def _connect_to_server(self):
+        """
+        This method runs when this server is a replica and
+        wants to connect to the master server
+        """
         if self.master_info is None:
             return
         
@@ -161,6 +177,10 @@ class RedisServer:
             logger.error("Connection Failed", e)
     
     def _handshake(self):
+        """
+        Handshaking protocol when this server is a replica
+        And wants to connect to the master server
+        """
         if not self._master_socket:
             return
 
