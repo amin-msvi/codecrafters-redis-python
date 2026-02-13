@@ -13,8 +13,8 @@ class ReplConfCommand(Command):
     
     def execute(self, args: list[str]) -> SimpleString | None:
         parsed_args = parse_args(args)
-        if listening_port := parsed_args.get("listening-port"):
+        if listening_port := parsed_args.get("listening-port"):  # noqa
             return SimpleString("OK")
-        if capa := parsed_args.get("capa"):
+        if capa := parsed_args.get("capa"):  # noqa
             return SimpleString("OK")
         

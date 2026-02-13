@@ -35,45 +35,6 @@ class RedisServer:
         self.master_info = master_info
         self._master_socket = None
 
-    def connect_to_server(self):
-        if self.master_info is None:
-            return
-        
-        self._master_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            self._master_socket.connect((self.master_info.host, self.master_info.port))
-            logger.info(
-                f"Connected to master server at '{self.master_info.host}:{self.master_info.port}'"
-            )
-            
-            # Handshake step 1
-            self._master_socket.sendall(encode_resp(["PING"]))
-            data = self._master_socket.recv(1024)
-            if parse_resp(data)[0] != "PONG":
-                return
-                
-            # Handshake step 2
-            replconf: bytes = encode_resp(["REPLCONF", "listening-port", str(self._config.port)])
-            self._master_socket.sendall(replconf)
-            data = self._master_socket.recv(1024)
-            if parse_resp(data)[0] != "OK":
-                return
-
-            replconf = encode_resp(["REPLCONF", "capa", "psync2"])
-            self._master_socket.sendall(replconf)
-            data = self._master_socket.recv(1024)
-            if parse_resp(data)[0] != "OK":
-                return
-
-            # Handshake step 3
-            psync: bytes = encode_resp(["PSYNC", "?", "-1"])
-            self._master_socket.sendall(psync)
-            data = self._master_socket.recv(1024)
-            master_response = parse_resp(data)[0]
-
-        except socket.error as e:
-            logger.error("Connection Failed", e)
-
     def start(self) -> None:
         logger.info("Starting server on %s:%d", self._config.host, self._config.port)
         self._server_socket = socket.create_server(
@@ -81,7 +42,7 @@ class RedisServer:
         )
         self._server_socket.setblocking(False)
         
-        self.connect_to_server()
+        self._connect_to_server()
         
         try:
             self._run_event_loop()
@@ -179,8 +140,54 @@ class RedisServer:
         except RESPProtocolError as e:
             logger.warning("Protocol error: %s", e)
             return encode_resp(RESPError("ERR protocol error"))
+    
+    # Server Connection Method
+    def _connect_to_server(self):
+        if self.master_info is None:
+            return
+        
+        self._master_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            self._master_socket.connect((self.master_info.host, self.master_info.port))
+            logger.info(
+                f"Connected to master server at '{self.master_info.host}:{self.master_info.port}'"
+            )
 
-    # Transaction-related Methods
+            self._handshake()
+
+        except socket.error as e:
+            logger.error("Connection Failed", e)
+    
+    def _handshake(self):
+        if not self._master_socket:
+            return
+
+        # Step 1
+        self._master_socket.sendall(encode_resp(["PING"]))
+        data = self._master_socket.recv(1024)
+        if parse_resp(data)[0] != "PONG":
+            return
+            
+        # Step 2
+        replconf: bytes = encode_resp(["REPLCONF", "listening-port", str(self._config.port)])
+        self._master_socket.sendall(replconf)
+        data = self._master_socket.recv(1024)
+        if parse_resp(data)[0] != "OK":
+            return
+
+        replconf = encode_resp(["REPLCONF", "capa", "psync2"])
+        self._master_socket.sendall(replconf)
+        data = self._master_socket.recv(1024)
+        if parse_resp(data)[0] != "OK":
+            return
+
+        # Step 3
+        psync: bytes = encode_resp(["PSYNC", "?", "-1"])
+        self._master_socket.sendall(psync)
+        data = self._master_socket.recv(1024)
+        master_response = parse_resp(data)[0]  # noqa
+
+    # Transaction Methods
     def _execute_transaction_commands(self, client: socket.socket):
         args = self._transactions.get(client)
         results = []
@@ -194,7 +201,7 @@ class RedisServer:
         del self._transactions[client]
         return results
 
-    # Blocking-related Methods
+    # Blocking Methods
     def _add_blocker(self, response: BlockingResponse, client: socket.socket) -> None:
         """Register a client as blocked waiting for keys."""
         timeout_at = (
