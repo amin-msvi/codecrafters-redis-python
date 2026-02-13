@@ -85,9 +85,11 @@ class RedisServer:
         response = self._process_request(data, client)
 
         if response:
+            # RDBSync -> resp + sync rdb
             if isinstance(response, tuple):
                 client.sendall(response[0])
                 client.sendall(response[1])
+            # Normal -> resp
             else:
                 client.sendall(response)
 
@@ -97,22 +99,22 @@ class RedisServer:
             parsed_data = parse_resp(data)[0]
 
             # Transactions
-            if isinstance(parsed_data, list):
-                cmd = parsed_data[0].upper()
-                if cmd == "MULTI":
-                    self._transactions[client] = []
+            assert isinstance(parsed_data, list)
+            cmd = parsed_data[0].upper()
+            if cmd == "MULTI":
+                self._transactions[client] = []
+                return encode_resp(SimpleString("OK"))
+
+            if cmd == "EXEC":
+                result = self._execute_transaction_commands(client)
+                return encode_resp(result)
+
+            if cmd == "DISCARD":
+                if client in self._transactions:
+                    del self._transactions[client]
                     return encode_resp(SimpleString("OK"))
-
-                if cmd == "EXEC":
-                    result = self._execute_transaction_commands(client)
-                    return encode_resp(result)
-
-                if cmd == "DISCARD":
-                    if client in self._transactions:
-                        del self._transactions[client]
-                        return encode_resp(SimpleString("OK"))
-                    else:
-                        return encode_resp(RESPError("DISCARD without MULTI"))
+                else:
+                    return encode_resp(RESPError("DISCARD without MULTI"))
 
             if client in self._transactions:
                 self._transactions[client].append(parsed_data)
