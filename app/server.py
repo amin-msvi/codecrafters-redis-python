@@ -130,18 +130,18 @@ class RedisServer:
         try:
             parsed_data = parse_resp(data)[0]
 
+            # Transactions
             if isinstance(parsed_data, list):
-                if parsed_data[0].upper() == "MULTI":
+                cmd = parsed_data[0].upper()
+                if cmd == "MULTI":
                     self._transactions[client] = []
                     return encode_resp(SimpleString("OK"))
 
-            if isinstance(parsed_data, list):
-                if parsed_data[0].upper() == "EXEC":
+                if cmd == "EXEC":
                     result = self._execute_transaction_commands(client)
                     return encode_resp(result)
 
-            if isinstance(parsed_data, list):
-                if parsed_data[0].upper() == "DISCARD":
+                if cmd == "DISCARD":
                     if client in self._transactions:
                         del self._transactions[client]
                         return encode_resp(SimpleString("OK"))
@@ -154,6 +154,7 @@ class RedisServer:
 
             result = self._registry.execute(parsed_data)
 
+            # Expiry
             event = None
             if isinstance(result, tuple):
                 result, event = result
