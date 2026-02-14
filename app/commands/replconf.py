@@ -1,5 +1,5 @@
 from app.commands.base import Command
-from app.server_info import ServerInfo
+from app.server.server_info import ServerInfo
 from app.types import SimpleString
 from app.utils.command_utils import parse_args
 
@@ -17,4 +17,3 @@ class ReplConfCommand(Command):
             return SimpleString("OK")
         if capa := parsed_args.get("capa"):  # noqa
             return SimpleString("OK")
-        

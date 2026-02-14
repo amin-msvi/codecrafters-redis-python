@@ -4,8 +4,14 @@ from app.config import ServerConfig
 
 from app.data.db import DataBase
 from app.logger import setup_logging
-from app.server import RedisServer
-from app.server_info import MasterInfo, Replication, ServerInfo
+from app.server import (
+    MasterRole,
+    MasterInfo,
+    Replication,
+    ReplicaRole,
+    RedisServer,
+    ServerInfo,
+)
 
 
 def parse_cli_args() -> Namespace:
@@ -20,11 +26,7 @@ def parse_cli_args() -> Namespace:
 
 
 def get_server_info(args: Namespace) -> ServerInfo:
-    replication = Replication(
-        role="slave"
-        if args.replicaof is not None
-        else "master"
-    )
+    replication = Replication(role="slave" if args.replicaof is not None else "master")
     return ServerInfo(replication=replication)
 
 
@@ -42,12 +44,16 @@ def main():
         DataBase: DataBase(),
     }
     registry.auto_discover(dependencies)
-    
-    # Master Info
-    master_info = MasterInfo.from_string(args.replicaof)
+
+    # Role assignment
+    if args.replicaof:
+        master_info = MasterInfo.from_string(args.replicaof)
+        role = ReplicaRole(master_info, config)
+    else:
+        role = MasterRole()
 
     # Create and start server
-    server = RedisServer(registry, config, master_info)
+    server = RedisServer(role, registry, config)
     server.start()
 
 

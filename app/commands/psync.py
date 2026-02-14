@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from app.commands.base import Command
-from app.server_info import ServerInfo
+from app.server import ServerInfo
 from app.types import RDB, SimpleString
 
 @dataclass

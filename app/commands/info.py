@@ -1,6 +1,6 @@
 from typing_extensions import Any
 from app.commands.base import Command
-from app.server_info import ServerInfo
+from app.server import ServerInfo
 
 
 class InfoCommand(Command):
