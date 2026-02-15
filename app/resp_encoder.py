@@ -39,7 +39,7 @@ def encode_rdb(s: str | None) -> bytes:
     return header + body
 
 
-def encode_array(items: list) -> bytes:
+def encode_array(items: list[EncodeableValue]) -> bytes:
     """Encode as *2\r\n..., recursively calling encode_resp()"""
     count = len(items)
     parts = [f"*{count}\r\n".encode("utf-8")]

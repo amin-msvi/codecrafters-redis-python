@@ -1,7 +1,13 @@
 import inspect
 from typing import Any
 
-from app.commands.base import Command, CommandFlags
+from app.commands.base import (
+    BlockingResponse,
+    Command,
+    CommandFlags,
+    CommandResult,
+    RDBSync,
+)
 from app.types import RESPError, RESPValue
 
 
@@ -19,7 +25,9 @@ class CommandRegistry:
         """Look up a command by name"""
         return self._commands.get(name)
 
-    def execute(self, command_input: RESPValue) -> RESPError | Any:
+    def execute(
+        self, command_input: RESPValue
+    ) -> CommandResult | BlockingResponse | RDBSync | RESPError:
         """Main entry point - parse input, validate, and execute."""
         if command_input is None:
             return RESPError("empty command")

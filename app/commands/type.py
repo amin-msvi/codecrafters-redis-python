@@ -1,4 +1,4 @@
-from app.commands.base import Command
+from app.commands.base import Command, CommandResult
 from app.data.db import DataBase
 from app.types import SimpleString
 
@@ -10,9 +10,9 @@ class TypeCommand(Command):
     def __init__(self, database: DataBase) -> None:
         self.database = database
 
-    def execute(self, args: list[str]) -> SimpleString:
+    def execute(self, args: list[str]) -> CommandResult:
         key = args[0]
         value = self.database.get(key)
         if value:
-            return SimpleString(value.dtype)
-        return SimpleString("none")
+            return CommandResult(response=SimpleString(value.dtype))
+        return CommandResult(response=SimpleString("none"))

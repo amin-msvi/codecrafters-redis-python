@@ -1,4 +1,4 @@
-from app.commands.base import Command, CommandFlags, UnblockEvent
+from app.commands.base import Command, CommandFlags, CommandResult, UnblockEvent
 from app.data.db import DataBase
 from app.data.stream_helper import StreamOps
 from app.types import RESPError
@@ -13,14 +13,14 @@ class XaddCommand(Command):
     def __init__(self, database: DataBase):
         self.stream_ops = StreamOps(database)
 
-    def execute(self, args: list[str]) -> tuple[str, UnblockEvent] | RESPError:
+    def execute(self, args: list[str]) -> CommandResult:
         key = args[0]
         id = args[1]
         fields = self._get_pairs(args[2:])
         result = self.stream_ops.add(key, id, fields)
         if isinstance(result, RESPError):
-            return result
-        return str(result), UnblockEvent(key=key)
+            return CommandResult(response=result)
+        return CommandResult(response=str(result), event=UnblockEvent(key=key))
 
-    def _get_pairs(self, pairs: list) -> dict:
+    def _get_pairs(self, pairs: list[str]) -> dict[str, str]:
         return parse_args(pairs)

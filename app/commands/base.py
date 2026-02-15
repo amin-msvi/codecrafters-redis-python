@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from app.types import RDB, SimpleString
+from app.types import RDB, EncodeableValue, SimpleString
 
 
 @dataclass
@@ -28,6 +30,14 @@ class CommandFlags:
     write: bool = False
 
 
+@dataclass
+class CommandResult:
+    """Every command returns this to the server."""
+
+    response: EncodeableValue
+    event: UnblockEvent | None = None
+
+
 class Command(ABC):
     """
     Abstract base class for all Redis commands.
@@ -43,7 +53,7 @@ class Command(ABC):
     flags: CommandFlags = CommandFlags()
 
     @abstractmethod
-    def execute(self, args: list[str]) -> Any:
+    def execute(self, args: list[str]) -> CommandResult | BlockingResponse | RDBSync:
         """
         Execute the command with the given arguments.
 
@@ -51,9 +61,11 @@ class Command(ABC):
             args: List of arguments (command name already removed)
 
         Returns:
-            The result to be encoded and sent to client
+            CommandResult for normal responses (with optional UnblockEvent),
+            BlockingResponse to park the client,
+            RDBSync for replication sync.
         """
-        pass
+        raise NotImplementedError
 
     def validate(self, args: list[str] | None) -> str | None:
         """

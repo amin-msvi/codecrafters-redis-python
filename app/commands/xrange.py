@@ -1,5 +1,6 @@
 from typing import Any
-from app.commands.base import Command
+
+from app.commands.base import Command, CommandResult
 from app.data.db import DataBase
 from app.data.stream.stream_entry import StreamEntry
 from app.data.stream_helper import StreamOps
@@ -12,12 +13,12 @@ class XRangeCommand(Command):
     def __init__(self, database: DataBase):
         self.stream_ops = StreamOps(database)
 
-    def execute(self, args: list[str]) -> list[StreamEntry | None]:
+    def execute(self, args: list[str]) -> CommandResult:
         key = args[0]
         start_id = args[1]
         end_id = args[2]
         result = self.stream_ops.xrange(key, start_id, end_id)
-        return self._format(result)
+        return CommandResult(response=self._format(result))
 
     @staticmethod
     def _format(entries: list[StreamEntry]) -> list[Any]:

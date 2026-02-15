@@ -1,28 +1,31 @@
 """
 RESP (Redis Serialization Protocol) type definitions.
 
-This module contains all types used for RESP protocol encoding/decoding:
-- SimpleString: RESP simple string type (+)
-- RESPError: RESP error type (-)
-- RESPProtocolError: Exception for protocol violations
+Two categories of types flow through the system:
 
-Type aliases:
-- RESPValue: Union of all possible RESP values (str, int, list, None, RESPError)
-- ParseResult: Tuple of parsed RESP value and remaining bytes
-- EncodeableValue: Union of all values that can be encoded to RESP format
+1. Protocol types - what the parser produces from raw bytes:
+   str, int, list, None, RESPError
+   Aliased as: RESPValue
+
+2. Response wrapper types - encoding hints that commands use
+   to control the wire format:
+   SimpleString  -> encodes as +OK\\r\\n (not bulk string)
+   NullArray     -> encodes as *-1\\r\\n (not null bulk string)
+   RDB           -> encodes as binary RDB transfer
 """
 
 from dataclasses import dataclass
 
 
-@dataclass
-class SimpleString:
-    string: str
-
-
+# Protocol Types
 @dataclass
 class RESPError:
     message: str
+
+
+@dataclass
+class SimpleString:
+    string: str
 
 
 class NullArray:

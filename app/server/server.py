@@ -3,8 +3,7 @@ import socket
 from datetime import datetime, timedelta
 
 from app.blocking import BlockingState, WaitingClient
-from app.commands.base import BlockingResponse, CommandFlags, UnblockEvent
-from app.commands.base import RDBSync
+from app.commands.base import BlockingResponse, CommandFlags, CommandResult, RDBSync
 from app.commands.registry import CommandRegistry
 from app.config import ServerConfig
 from app.logger import get_logger
@@ -76,7 +75,7 @@ class RedisServer:
                 client.sendall(response)
 
         self._role.after_command(data, cmd_flags)
-    
+
     def _parse_request(self, data: bytes) -> tuple[list, str, CommandFlags | None]:
         parsed_data = parse_resp(data)[0]
         assert isinstance(parsed_data, list)
@@ -85,7 +84,7 @@ class RedisServer:
         return parsed_data, cmd, cmd_flags
 
     def _process_request(
-        self, parsed_data: list, cmd_name: str, client: socket.socket
+        self, parsed_data: list[str], cmd_name: str, client: socket.socket
     ) -> tuple[bytes, bytes] | bytes | None:
         """Execute, and encode a request."""
         try:
@@ -111,20 +110,17 @@ class RedisServer:
 
             result = self._registry.execute(parsed_data)
 
-            # Blocking/Unblocking
-            event = None
-            if isinstance(result, tuple):
-                result, event = result
-
             if isinstance(result, BlockingResponse):
                 self._add_blocker(result, client)
                 return None
 
-            if isinstance(event, UnblockEvent):
-                self._try_unblock(event.key)
-
             if isinstance(result, RDBSync):
                 return encode_resp(result.response), encode_resp(result.rdb)
+
+            if isinstance(result, CommandResult):
+                if result.event:
+                    self._try_unblock(result.event.key)
+                return encode_resp(result.response)
 
             return encode_resp(result)
 
@@ -148,7 +144,13 @@ class RedisServer:
             del self._transactions[client]
             return []
         for arg in args:
-            results.append(self._registry.execute(arg))
+            result = self._registry.execute(arg)
+            if isinstance(result, CommandResult):
+                if result.event:
+                    self._try_unblock(result.event.key)
+                results.append(result.response)
+            else:
+                results.append(result)
         del self._transactions[client]
         return results
 

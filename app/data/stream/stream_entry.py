@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 from app.data.stream.stream_id import StreamID
 
 
@@ -15,6 +16,6 @@ class StreamEntry:
     id: StreamID
     fields: dict[str, str]
 
-    def format(self) -> list:
+    def format(self) -> list[str | list[str]]:
         """Format for RESP response."""
         return [str(self.id), [field for pair in self.fields.items() for field in pair]]

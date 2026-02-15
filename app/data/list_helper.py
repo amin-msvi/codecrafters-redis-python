@@ -5,19 +5,19 @@ class ListOps:
     def __init__(self, database: DataBase):
         self._db = database
 
-    def lpush(self, key: str, values: list) -> int:
+    def lpush(self, key: str, values: list[str]) -> int:
         """Prepend values to list and return new length"""
         redis_val = self._get_or_create_list(key)
         redis_val.data = values[::-1] + redis_val.data
         return len(redis_val.data)
 
-    def rpush(self, key: str, values: list) -> int:
+    def rpush(self, key: str, values: list[str]) -> int:
         """Append values to list and return new length"""
         redis_val = self._get_or_create_list(key)
         redis_val.data.extend(values)
         return len(redis_val.data)
 
-    def lpop(self, key: str, count: int = 1) -> str | list | None:
+    def lpop(self, key: str, count: int = 1) -> str | list[str] | None:
         redis_val = self._get_list(key)
         if redis_val is None or not redis_val.data:
             return None

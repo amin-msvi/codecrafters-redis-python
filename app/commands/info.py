@@ -1,6 +1,5 @@
-from typing import Any
-from app.commands.base import Command
-from app.server import ServerInfo
+from app.commands.base import Command, CommandResult
+from app.server.server_info import ServerInfo
 
 
 class InfoCommand(Command):
@@ -10,6 +9,7 @@ class InfoCommand(Command):
     def __init__(self, server_info: ServerInfo):
         self._server_info = server_info
 
-    def execute(self, args: list[str]) -> Any:
+    def execute(self, args: list[str]) -> CommandResult:
         if args[0] == "replication":
-            return self._server_info.replication.format()
+            return CommandResult(response=self._server_info.replication.format())
+        return CommandResult(response=None)

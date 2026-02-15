@@ -1,6 +1,6 @@
 from typing import Any
 
-from app.commands.base import BlockingResponse, Command
+from app.commands.base import BlockingResponse, Command, CommandResult
 from app.data.db import DataBase
 from app.data.stream.stream_entry import StreamEntry
 from app.data.stream_helper import StreamOps
@@ -20,9 +20,7 @@ class XReadCommand(Command):
     def __init__(self, database: DataBase):
         self.stream_ops = StreamOps(database)
 
-    def execute(
-        self, args: list[str]
-    ) -> list[list[Any]] | RESPError | None | BlockingResponse:
+    def execute(self, args: list[str]) -> CommandResult | BlockingResponse:
         """
         Execute XREAD command.
 
@@ -30,19 +28,18 @@ class XReadCommand(Command):
             args: [BLOCK, timeout, STREAMS, key1, ..., keyN, id1, ..., idN]
 
         Returns:
-            List of [key, entries] pairs for streams with data,
-            None if no data available,
-            RESPError if arguments are invalid
+            CommandResult with list of [key, entries] pairs, None, or RESPError.
+            BlockingResponse if BLOCK is specified and no data available.
         """
 
         # Parsing arguments
         parsed_args = self._parse_streams_args(args)
         if isinstance(parsed_args, RESPError):
-            return parsed_args
+            return CommandResult(response=parsed_args)
         keys, ids, expiry = parsed_args
 
         # Read immediately
-        responses = []
+        responses: list[list[Any]] = []
         for i, (key, stream_id) in enumerate(zip(keys, ids)):
             if ids[i] == "$":
                 ids[i] = str(self.stream_ops.top_id(key))
@@ -51,7 +48,7 @@ class XReadCommand(Command):
             if entries:
                 responses.append(self._format_stream(key, entries))
         if responses:
-            return responses
+            return CommandResult(response=responses)
 
         ids_by_key = dict(zip(keys, ids))
 
@@ -70,7 +67,7 @@ class XReadCommand(Command):
                 unblock_callback=unblock_for_xread,
             )
 
-        return None
+        return CommandResult(response=None)
 
     @staticmethod
     def _format_stream(key: str, entries: list[StreamEntry]) -> list[Any]:

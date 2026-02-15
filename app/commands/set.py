@@ -1,7 +1,7 @@
-from app.commands.base import Command, CommandFlags
-from app.data.db import DataBase
 from datetime import datetime, timedelta
 
+from app.commands.base import Command, CommandFlags, CommandResult
+from app.data.db import DataBase
 from app.data.string_helper import StringOps
 from app.types import SimpleString
 from app.utils.command_utils import parse_args
@@ -19,13 +19,13 @@ class SetCommand(Command):
     def __init__(self, database: DataBase):
         self.string_ops = StringOps(database)
 
-    def execute(self, args: list[str]) -> SimpleString:
+    def execute(self, args: list[str]) -> CommandResult:
         key = args[0]
         value = args[1]
         self.string_ops.set(key, value, self._get_expiry(args[2:]))
-        return SimpleString("OK")
+        return CommandResult(response=SimpleString("OK"))
 
-    def _get_expiry(self, pairs: list) -> datetime | None:
+    def _get_expiry(self, pairs: list[str]) -> datetime | None:
         pair_map = parse_args(pairs)
         if sec := pair_map.get("EX"):
             return datetime.now() + timedelta(seconds=float(sec))

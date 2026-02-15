@@ -1,7 +1,6 @@
-from app.commands.base import Command, CommandFlags
+from app.commands.base import Command, CommandFlags, CommandResult
 from app.data.db import DataBase
 from app.data.string_helper import StringOps
-from app.types import RESPError
 
 
 class IncrCommand(Command):
@@ -12,6 +11,7 @@ class IncrCommand(Command):
     def __init__(self, database: DataBase):
         self._string_obs = StringOps(database)
 
-    def execute(self, args: list[str]) -> int | RESPError:
+    def execute(self, args: list[str]) -> CommandResult:
         key = args[0]
-        return self._string_obs.incr(key)
+        response = self._string_obs.incr(key)
+        return CommandResult(response=response)

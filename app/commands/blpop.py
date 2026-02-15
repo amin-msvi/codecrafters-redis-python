@@ -1,5 +1,6 @@
 from typing import Any
-from app.commands.base import BlockingResponse, Command, CommandFlags
+
+from app.commands.base import BlockingResponse, Command, CommandFlags, CommandResult
 from app.data.db import DataBase
 from app.data.list_helper import ListOps
 
@@ -12,14 +13,14 @@ class BLPopCommand(Command):
     def __init__(self, database: DataBase):
         self.list_ops = ListOps(database)
 
-    def execute(self, args: list[str]) -> list | BlockingResponse:
+    def execute(self, args: list[str]) -> CommandResult | BlockingResponse:
         keys = args[:-1]
         timeout = float(args[-1])
 
         for key in keys:
             if self.list_ops.has_data(key):
                 value = self.list_ops.lpop(key)
-                return [key, value]
+                return CommandResult(response=[key, value])
 
         def unblock_for_blpop(key: str) -> tuple[str, Any] | None:
             if not self.list_ops.has_data(key):
