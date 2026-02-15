@@ -7,10 +7,10 @@ from app.utils.command_utils import parse_args
 class ReplConfCommand(Command):
     name = "REPLCONF"
     arity = (2, 2)
-    
+
     def __init__(self, server_info: ServerInfo):
         self._server_info = server_info
-    
+
     def execute(self, args: list[str]) -> SimpleString | None:
         parsed_args = parse_args(args)
         if listening_port := parsed_args.get("listening-port"):  # noqa

@@ -2,7 +2,6 @@ from dataclasses import field, dataclass, fields
 from uuid import uuid4
 
 
-
 @dataclass
 class InfoSection:
     def format(self):

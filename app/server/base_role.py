@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 class ServerRole(ABC):
     """
     Strategy interface for role-specific server behavior.
-    
+
     The server calls these hooks at specific points in its lifecycle.
     Each role decides what to do (or nothing)
     """
@@ -37,9 +37,7 @@ class ServerRole(ABC):
         ...
 
     @abstractmethod
-    def owns_socket(self, sock: socket.socket) -> bool:
-        ...
+    def owns_socket(self, sock: socket.socket) -> bool: ...
 
     @abstractmethod
-    def add_socket(self, sock: socket.socket) -> None:
-        ...
+    def add_socket(self, sock: socket.socket) -> None: ...

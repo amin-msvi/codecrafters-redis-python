@@ -16,10 +16,12 @@ class BlockingResponse:
 class UnblockEvent:
     key: str
 
+
 @dataclass
 class RDBSync:
     response: SimpleString
     rdb: RDB
+
 
 @dataclass
 class CommandFlags:

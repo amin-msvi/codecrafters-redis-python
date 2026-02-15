@@ -22,22 +22,22 @@ class ReplicaRole(ServerRole):
 
     def on_startup(self, server: "RedisServer") -> None:
         self._connect_to_master()
-    
+
     def handle_socket(self, sock: socket.socket) -> None:
         pass
-    
+
     def after_command(self, data: bytes, flags: CommandFlags | None) -> None:
         return
-    
+
     def get_extra_sockets(self) -> list[socket.socket]:
         return [self._master_socket]
-    
+
     def owns_socket(self, sock: socket.socket) -> bool:
         return sock == self._master_socket
-    
+
     def add_socket(self, sock: socket.socket) -> None:
         return
-    
+
     # Private Methods
     def _connect_to_master(self):
         """
@@ -47,7 +47,9 @@ class ReplicaRole(ServerRole):
 
         self._master_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            self._master_socket.connect((self._master_info.host, self._master_info.port))
+            self._master_socket.connect(
+                (self._master_info.host, self._master_info.port)
+            )
             logger.info(
                 f"Connected to master server at '{self._master_info.host}:{self._master_info.port}'"
             )
@@ -56,7 +58,7 @@ class ReplicaRole(ServerRole):
 
         except socket.error as e:
             logger.error("Connection Failed", e)
-    
+
     def _handshake(self):
         """Applies 3-step Redis handshake protocol between replica and master"""
 
@@ -65,9 +67,11 @@ class ReplicaRole(ServerRole):
         data = self._master_socket.recv(1024)
         if parse_resp(data)[0] != "PONG":
             return
-            
+
         # Step 2
-        replconf: bytes = encode_resp(["REPLCONF", "listening-port", str(self._config.port)])
+        replconf: bytes = encode_resp(
+            ["REPLCONF", "listening-port", str(self._config.port)]
+        )
         self._master_socket.sendall(replconf)
         data = self._master_socket.recv(1024)
         if parse_resp(data)[0] != "OK":
@@ -100,14 +104,12 @@ class MasterRole(ServerRole):
 
     def get_extra_sockets(self) -> list[socket.socket]:
         return []
-    
+
     def handle_socket(self, sock: socket.socket) -> None:
         return
 
     def owns_socket(self, sock: socket.socket) -> bool:
         return False
-    
+
     def add_socket(self, sock: socket.socket) -> None:
         return self._replicas.append(sock)
-
-        

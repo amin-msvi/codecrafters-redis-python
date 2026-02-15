@@ -28,6 +28,7 @@ class RESPError:
 class NullArray:
     pass
 
+
 @dataclass
 class RDB:
     string: str | None

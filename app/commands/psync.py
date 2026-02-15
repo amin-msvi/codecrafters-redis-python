@@ -8,10 +8,10 @@ from app.server import ServerInfo
 class PSyncCommand(Command):
     name = "PSYNC"
     arity = (2, 2)
-    
+
     def __init__(self, server_info: ServerInfo):
         self._server_info = server_info
-    
+
     def execute(self, args: list[str]) -> RDBSync | None:
         if args[0] == "?" and args[1] == "-1":
             master_replid = self._server_info.replication.master_replid

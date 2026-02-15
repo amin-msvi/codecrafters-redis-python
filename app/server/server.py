@@ -42,7 +42,7 @@ class RedisServer:
             all_sockets = [self._server_socket] + self._connections
             all_sockets += self._role.get_extra_sockets()
             ready, _, _ = select.select(all_sockets, [], [], 0.1)
-            
+
             for sock in ready:
                 assert sock is not None
                 if sock == self._server_socket:
@@ -62,7 +62,7 @@ class RedisServer:
             return
 
         response = self._process_request(data, client)
-        
+
         if response:
             if isinstance(response, tuple):
                 client.sendall(response[0])
