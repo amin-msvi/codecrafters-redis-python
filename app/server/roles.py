@@ -26,9 +26,6 @@ class ReplicaRole(ServerRole):
     def handle_socket(self, sock: socket.socket) -> None:
         pass
 
-    def after_command(self, data: bytes, flags: CommandFlags | None) -> None:
-        return
-
     def get_extra_sockets(self) -> list[socket.socket]:
         return [self._master_socket]
 
@@ -36,6 +33,9 @@ class ReplicaRole(ServerRole):
         return sock == self._master_socket
 
     def add_socket(self, sock: socket.socket) -> None:
+        return
+
+    def after_command(self, data: bytes, flags: CommandFlags | None) -> None:
         return
 
     # Private Methods
@@ -102,14 +102,14 @@ class MasterRole(ServerRole):
             for replica in self._replicas:
                 replica.sendall(data)
 
-    def get_extra_sockets(self) -> list[socket.socket]:
-        return []
-
-    def handle_socket(self, sock: socket.socket) -> None:
-        return
-
     def owns_socket(self, sock: socket.socket) -> bool:
         return False
 
     def add_socket(self, sock: socket.socket) -> None:
         return self._replicas.append(sock)
+
+    def get_extra_sockets(self) -> list[socket.socket]:
+        return []
+
+    def handle_socket(self, sock: socket.socket) -> None:
+        return
