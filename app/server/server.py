@@ -35,7 +35,10 @@ class RedisServer:
         )
         self._server_socket.setblocking(False)
         self._role.on_startup(self)
-        self._run_event_loop()
+        try:
+            self._run_event_loop()
+        finally:
+            self._shutdown()
 
     def _run_event_loop(self):
         while True:
@@ -61,7 +64,8 @@ class RedisServer:
             self._remove_client(client)
             return
 
-        response = self._process_request(data, client)
+        parsed_data, cmd_name, cmd_flags = self._parse_request(data)
+        response = self._process_request(parsed_data, cmd_name, client)
 
         if response:
             if isinstance(response, tuple):
@@ -71,35 +75,30 @@ class RedisServer:
             else:
                 client.sendall(response)
 
-        flags = self.get_flags(data)
-        self._role.after_command(data, flags)
-
-    def get_flags(self, data: bytes) -> CommandFlags | None:
+        self._role.after_command(data, cmd_flags)
+    
+    def _parse_request(self, data: bytes) -> tuple[list, str, CommandFlags | None]:
         parsed_data = parse_resp(data)[0]
         assert isinstance(parsed_data, list)
         cmd = parsed_data[0].upper()
         cmd_flags = self._registry.get_flags(cmd)
-        return cmd_flags
+        return parsed_data, cmd, cmd_flags
 
     def _process_request(
-        self, data: bytes, client: socket.socket
+        self, parsed_data: list, cmd_name: str, client: socket.socket
     ) -> tuple[bytes, bytes] | bytes | None:
-        """Parse, execute, and encode a request."""
+        """Execute, and encode a request."""
         try:
-            parsed_data = parse_resp(data)[0]
-            assert isinstance(parsed_data, list)
-            cmd = parsed_data[0].upper()
-
             # Transactions
-            if cmd == "MULTI":
+            if cmd_name == "MULTI":
                 self._transactions[client] = []
                 return encode_resp(SimpleString("OK"))
 
-            if cmd == "EXEC":
+            if cmd_name == "EXEC":
                 result = self._execute_transaction_commands(client)
                 return encode_resp(result)
 
-            if cmd == "DISCARD":
+            if cmd_name == "DISCARD":
                 if client in self._transactions:
                     del self._transactions[client]
                     return encode_resp(SimpleString("OK"))
@@ -112,7 +111,7 @@ class RedisServer:
 
             result = self._registry.execute(parsed_data)
 
-            # Expiry
+            # Blocking/Unblocking
             event = None
             if isinstance(result, tuple):
                 result, event = result
