@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Callable
 
+from app.types import RDB, SimpleString
+
 
 @dataclass
 class BlockingResponse:
@@ -14,6 +16,10 @@ class BlockingResponse:
 class UnblockEvent:
     key: str
 
+@dataclass
+class RDBSync:
+    response: SimpleString
+    rdb: RDB
 
 @dataclass
 class CommandFlags:

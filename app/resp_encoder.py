@@ -28,10 +28,12 @@ def encode_bulk_string(s: str | None) -> bytes:
 def encode_rdb(s: str | None) -> bytes:
     """Encode as $<length>\r\n<binary-data> or $<len-of-binary>\r\n<empty-rdb-hex>\r\n"""
     if s is None:
-        empty_rdb = bytes.fromhex("524544495330303131fa0972656469732d76657205372e322e30fa0a72656469732d62697473c040fa056374696d65c26d08bc65fa08757365642d6d656dc2b0c41000fa08616f662d62617365c000fff06e3bfec0ff5aa2")
+        empty_rdb = bytes.fromhex(
+            "524544495330303131fa0972656469732d76657205372e322e30fa0a72656469732d62697473c040fa056374696d65c26d08bc65fa08757365642d6d656dc2b0c41000fa08616f662d62617365c000fff06e3bfec0ff5aa2"
+        )
         header = f"${len(empty_rdb)}\r\n".encode("utf-8")
-        return  header + empty_rdb
-    
+        return header + empty_rdb
+
     header = f"${len(bytes.fromhex(s))}\r\n".encode("utf-8")
     body = bytes.fromhex(s)
     return header + body

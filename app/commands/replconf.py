@@ -1,5 +1,5 @@
 from app.commands.base import Command
-from app.server.server_info import ServerInfo
+from app.server import ServerInfo
 from app.types import SimpleString
 from app.utils.command_utils import parse_args
 

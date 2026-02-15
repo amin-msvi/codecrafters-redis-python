@@ -1,12 +1,8 @@
-from dataclasses import dataclass
-from app.commands.base import Command
-from app.server import ServerInfo
+from app.commands.base import Command, RDBSync
+
 from app.types import RDB, SimpleString
 
-@dataclass
-class RDBSync:
-    response: SimpleString
-    rdb: RDB
+from app.server import ServerInfo
 
 
 class PSyncCommand(Command):

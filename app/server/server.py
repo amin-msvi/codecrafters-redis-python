@@ -1,85 +1,60 @@
 import select
 import socket
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING
 
 from app.blocking import BlockingState, WaitingClient
 from app.commands.base import BlockingResponse, CommandFlags, UnblockEvent
-from app.commands.psync import RDBSync
+from app.commands.base import RDBSync
+from app.commands.registry import CommandRegistry
 from app.config import ServerConfig
 from app.logger import get_logger
 from app.resp_encoder import encode_resp
 from app.resp_parser import parse_resp
-from app.server_info import MasterInfo
+from app.server.roles import ServerRole
 from app.types import NullArray, RESPError, RESPProtocolError, RESPValue, SimpleString
-
-if TYPE_CHECKING:
-    from app.commands.registry import CommandRegistry
 
 logger = get_logger(__name__)
 
 
 class RedisServer:
     def __init__(
-        self,
-        registry: "CommandRegistry",
-        config: ServerConfig,
-        master_info: MasterInfo | None,
+        self, role: ServerRole, registry: CommandRegistry, config: ServerConfig
     ):
-        # General attributes of a Redis server
+        self._role = role
         self._config = config
         self._registry = registry
         self._server_socket: socket.socket | None = None
         self._connections: list[socket.socket] = []
-        self._blocking_state = BlockingState()
+        self._blocking_state: BlockingState = BlockingState()
         self._transactions: dict[socket.socket, list[RESPValue]] = {}
-        # Attributes when this server is a replica
-        self.master_info = master_info
-        self._master_socket = None
-        # Attributes when this server is a master
-        self._replicas: list[socket.socket] = []
 
-    def start(self) -> None:
+    def start(self):
         logger.info("Starting server on %s:%d", self._config.host, self._config.port)
         self._server_socket = socket.create_server(
             (self._config.host, self._config.port), reuse_port=True
         )
         self._server_socket.setblocking(False)
-        
-        self._connect_to_server()
-        
-        try:
-            self._run_event_loop()
-        finally:
-            self._shutdown()
+        self._role.on_startup(self)
+        self._run_event_loop()
 
-    # Private Methods
-    def _run_event_loop(self) -> None:
-        assert self._server_socket is not None
-
+    def _run_event_loop(self):
         while True:
-            all_sockets: list[socket.socket] = [self._server_socket] + self._connections
-            if self._master_socket:
-                all_sockets.append(self._master_socket)
-            ready_to_read, _, _ = select.select(all_sockets, [], [], 0.1)
-
-            for ready_socket in ready_to_read:
-                if ready_socket == self._server_socket:
+            all_sockets = [self._server_socket] + self._connections
+            all_sockets += self._role.get_extra_sockets()
+            ready, _, _ = select.select(all_sockets, [], [], 0.1)
+            
+            for sock in ready:
+                assert sock is not None
+                if sock == self._server_socket:
                     self._accept_connection()
-                elif ready_socket == self._master_socket:
-                    pass
+                elif self._role.owns_socket(sock):
+                    self._role.handle_socket(sock)
                 else:
-                    self._handle_client(ready_socket)
+                    self._handle_client(sock)
 
             self._handle_expired_blockers()
 
-    def _accept_connection(self) -> None:
-        assert self._server_socket is not None
-        connection, address = self._server_socket.accept()
-        logger.info("Connection received from %s", address)
-        self._connections.append(connection)
-
-    def _handle_client(self, client: socket.socket) -> None:
+    def _handle_client(self, client: socket.socket):
         data = client.recv(self._config.recv_buffer_size)
 
         if data == b"":
@@ -87,36 +62,34 @@ class RedisServer:
             return
 
         response = self._process_request(data, client)
-
+        
         if response:
-            # RDBSync -> resp + sync rdb
             if isinstance(response, tuple):
                 client.sendall(response[0])
                 client.sendall(response[1])
-                self._replicas.append(client)
-            # Normal -> resp
+                self._role.add_socket(client)
             else:
                 client.sendall(response)
 
-            self._handle_replicas(data)
+        flags = self.get_flags(data)
+        self._role.after_command(data, flags)
 
-    def _handle_replicas(self, data: bytes) -> None:
-        _, _, cmd_flags = self._get_command_info(data)
-        if self._replicas and cmd_flags and cmd_flags.write:
-            for replica in self._replicas:
-                replica.sendall(data)
-
-    def _get_command_info(self, data: bytes) -> tuple[str, list, CommandFlags | None]:
+    def get_flags(self, data: bytes) -> CommandFlags | None:
         parsed_data = parse_resp(data)[0]
         assert isinstance(parsed_data, list)
         cmd = parsed_data[0].upper()
         cmd_flags = self._registry.get_flags(cmd)
-        return cmd, parsed_data, cmd_flags
+        return cmd_flags
 
-    def _process_request(self, data: bytes, client: socket.socket) -> tuple[bytes, bytes] | bytes | None:
+    def _process_request(
+        self, data: bytes, client: socket.socket
+    ) -> tuple[bytes, bytes] | bytes | None:
         """Parse, execute, and encode a request."""
         try:
-            cmd, parsed_data, _ = self._get_command_info(data)
+            parsed_data = parse_resp(data)[0]
+            assert isinstance(parsed_data, list)
+            cmd = parsed_data[0].upper()
+
             # Transactions
             if cmd == "MULTI":
                 self._transactions[client] = []
@@ -159,60 +132,12 @@ class RedisServer:
         except RESPProtocolError as e:
             logger.warning("Protocol error: %s", e)
             return encode_resp(RESPError("ERR protocol error"))
-    
-    # Server Connection Method
-    def _connect_to_server(self):
-        """
-        This method runs when this server is a replica and
-        wants to connect to the master server
-        """
-        if self.master_info is None:
-            return
-        
-        self._master_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            self._master_socket.connect((self.master_info.host, self.master_info.port))
-            logger.info(
-                f"Connected to master server at '{self.master_info.host}:{self.master_info.port}'"
-            )
 
-            self._handshake()
-
-        except socket.error as e:
-            logger.error("Connection Failed", e)
-    
-    def _handshake(self):
-        """
-        Handshaking protocol when this server is a replica
-        And wants to connect to the master server
-        """
-        if not self._master_socket:
-            return
-
-        # Step 1
-        self._master_socket.sendall(encode_resp(["PING"]))
-        data = self._master_socket.recv(1024)
-        if parse_resp(data)[0] != "PONG":
-            return
-            
-        # Step 2
-        replconf: bytes = encode_resp(["REPLCONF", "listening-port", str(self._config.port)])
-        self._master_socket.sendall(replconf)
-        data = self._master_socket.recv(1024)
-        if parse_resp(data)[0] != "OK":
-            return
-
-        replconf = encode_resp(["REPLCONF", "capa", "psync2"])
-        self._master_socket.sendall(replconf)
-        data = self._master_socket.recv(1024)
-        if parse_resp(data)[0] != "OK":
-            return
-
-        # Step 3
-        psync: bytes = encode_resp(["PSYNC", "?", "-1"])
-        self._master_socket.sendall(psync)
-        data = self._master_socket.recv(1024)
-        master_response = parse_resp(data)[0]  # noqa
+    def _accept_connection(self) -> None:
+        assert self._server_socket is not None
+        connection, address = self._server_socket.accept()
+        logger.info("Connection received from %s", address)
+        self._connections.append(connection)
 
     # Transaction Methods
     def _execute_transaction_commands(self, client: socket.socket):

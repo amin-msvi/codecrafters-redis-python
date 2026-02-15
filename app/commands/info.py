@@ -1,4 +1,4 @@
-from typing_extensions import Any
+from typing import Any
 from app.commands.base import Command
 from app.server import ServerInfo
 
