@@ -94,6 +94,8 @@ class RedisServer:
 
         while remaining:
             parsed_data, remaining = parse_resp(remaining)
+            if not isinstance(parsed_data, list):
+                continue
             cmd = parsed_data[0].upper()
             cmd_flags = self._registry.get_flags(cmd)
             requests.append((parsed_data, cmd, cmd_flags))
