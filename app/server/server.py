@@ -38,6 +38,13 @@ class RedisServer:
             self._run_event_loop()
         finally:
             self._shutdown()
+    
+    def run_command(self, data: bytes) -> list[CommandResult | BlockingResponse | RDBSync | RESPError]:
+        requests = self._parse_request(data)
+        results = []
+        for parsed_data, _, _ in requests:
+            results.append(self._registry.execute(parsed_data))
+        return results
 
     def _run_event_loop(self):
         while True:
@@ -63,25 +70,30 @@ class RedisServer:
             self._remove_client(client)
             return
 
-        parsed_data, cmd_name, cmd_flags = self._parse_request(data)
-        response = self._process_request(parsed_data, cmd_name, client)
+        parsed_requests = self._parse_request(data)
+        for parsed_data, cmd_name, cmd_flags in parsed_requests:
+            response = self._process_request(parsed_data, cmd_name, client)
+    
+            if response:
+                if isinstance(response, tuple):
+                    client.sendall(response[0])
+                    client.sendall(response[1])
+                    self._role.add_socket(client)
+                else:
+                    client.sendall(response)
 
-        if response:
-            if isinstance(response, tuple):
-                client.sendall(response[0])
-                client.sendall(response[1])
-                self._role.add_socket(client)
-            else:
-                client.sendall(response)
+            self._role.after_command(data, cmd_flags)
 
-        self._role.after_command(data, cmd_flags)
+    def _parse_request(self, data: bytes) -> list[tuple[list, str, CommandFlags | None]]:
+        requests = []
+        remaining = data
 
-    def _parse_request(self, data: bytes) -> tuple[list, str, CommandFlags | None]:
-        parsed_data = parse_resp(data)[0]
-        assert isinstance(parsed_data, list)
-        cmd = parsed_data[0].upper()
-        cmd_flags = self._registry.get_flags(cmd)
-        return parsed_data, cmd, cmd_flags
+        while remaining:
+            parsed_data, remaining = parse_resp(remaining)
+            cmd = parsed_data[0].upper()
+            cmd_flags = self._registry.get_flags(cmd)
+            requests.append((parsed_data, cmd, cmd_flags))
+        return requests
 
     def _process_request(
         self, parsed_data: list[str], cmd_name: str, client: socket.socket

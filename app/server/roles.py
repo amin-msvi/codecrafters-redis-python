@@ -21,10 +21,16 @@ class ReplicaRole(ServerRole):
         self._config = config
 
     def on_startup(self, server: "RedisServer") -> None:
+        self._server = server
         self._connect_to_master()
 
     def handle_socket(self, sock: socket.socket) -> None:
-        pass
+        data = sock.recv(self._config.recv_buffer_size)
+
+        if not data:
+            return
+
+        self._server.run_command(data)
 
     def get_extra_sockets(self) -> list[socket.socket]:
         return [self._master_socket]
@@ -87,7 +93,10 @@ class ReplicaRole(ServerRole):
         psync: bytes = encode_resp(["PSYNC", "?", "-1"])
         self._master_socket.sendall(psync)
         data = self._master_socket.recv(1024)
-        master_response = parse_resp(data)[0]  # noqa
+        fullresync, remaining = parse_resp(data)  # noqa
+
+        if not remaining:
+            remaining = self._master_socket.recv(1024)
 
 
 class MasterRole(ServerRole):
