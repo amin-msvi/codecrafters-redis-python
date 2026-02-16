@@ -38,8 +38,10 @@ class RedisServer:
             self._run_event_loop()
         finally:
             self._shutdown()
-    
-    def run_command(self, data: bytes) -> list[CommandResult | BlockingResponse | RDBSync | RESPError]:
+
+    def run_command(
+        self, data: bytes
+    ) -> list[CommandResult | BlockingResponse | RDBSync | RESPError]:
         requests = self._parse_request(data)
         results = []
         for parsed_data, _, _ in requests:
@@ -73,7 +75,7 @@ class RedisServer:
         parsed_requests = self._parse_request(data)
         for parsed_data, cmd_name, cmd_flags in parsed_requests:
             response = self._process_request(parsed_data, cmd_name, client)
-    
+
             if response:
                 if isinstance(response, tuple):
                     client.sendall(response[0])
@@ -84,7 +86,9 @@ class RedisServer:
 
             self._role.after_command(data, cmd_flags)
 
-    def _parse_request(self, data: bytes) -> list[tuple[list, str, CommandFlags | None]]:
+    def _parse_request(
+        self, data: bytes
+    ) -> list[tuple[list, str, CommandFlags | None]]:
         requests = []
         remaining = data
 

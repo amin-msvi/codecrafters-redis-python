@@ -15,6 +15,4 @@ class LPushCommand(Command):
         key = args[0]
         values = args[1:]
         length: int = self.list_ops.lpush(key, values)
-        return CommandResult(
-            response=length, event=UnblockEvent(key=key)
-        )
+        return CommandResult(response=length, event=UnblockEvent(key=key))
