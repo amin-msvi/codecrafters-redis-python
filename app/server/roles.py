@@ -32,7 +32,10 @@ class ReplicaRole(ServerRole):
 
         responses = self._server.run_command(data)
         for response in responses:
-            if isinstance(response["response"], CommandResult) and response["response"].ack_master:
+            if (
+                isinstance(response["response"], CommandResult)
+                and response["response"].ack_master
+            ):
                 sock.sendall(encode_resp(response["response"].response))
 
     def get_extra_sockets(self) -> list[socket.socket]:

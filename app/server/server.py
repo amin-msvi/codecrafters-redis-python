@@ -45,10 +45,9 @@ class RedisServer:
         requests = self._parse_request(data)
         responses = []
         for parsed_data, cmd_name, _ in requests:
-            responses.append({
-                "response": self._registry.execute(parsed_data),
-                "cmd_name": cmd_name
-            })
+            responses.append(
+                {"response": self._registry.execute(parsed_data), "cmd_name": cmd_name}
+            )
         return responses
 
     def _run_event_loop(self):
