@@ -36,6 +36,7 @@ class CommandResult:
 
     response: EncodeableValue
     event: UnblockEvent | None = None
+    ack_master: bool = False
 
 
 class Command(ABC):

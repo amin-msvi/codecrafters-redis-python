@@ -41,12 +41,15 @@ class RedisServer:
 
     def run_command(
         self, data: bytes
-    ) -> list[CommandResult | BlockingResponse | RDBSync | RESPError]:
+    ) -> list[dict[str, CommandResult | BlockingResponse | RDBSync | RESPError]]:
         requests = self._parse_request(data)
-        results = []
-        for parsed_data, _, _ in requests:
-            results.append(self._registry.execute(parsed_data))
-        return results
+        responses = []
+        for parsed_data, cmd_name, _ in requests:
+            responses.append({
+                "response": self._registry.execute(parsed_data),
+                "cmd_name": cmd_name
+            })
+        return responses
 
     def _run_event_loop(self):
         while True:

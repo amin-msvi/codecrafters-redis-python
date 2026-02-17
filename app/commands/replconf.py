@@ -17,4 +17,6 @@ class ReplConfCommand(Command):
             return CommandResult(response=SimpleString("OK"))
         if capa := parsed_args.get("capa"):  # noqa
             return CommandResult(response=SimpleString("OK"))
+        if ack := parsed_args.get("GETACK"):  # noqa
+            return CommandResult(response=["REPLCONF", "ACK", "0"], ack_master=True)
         return CommandResult(response=None)

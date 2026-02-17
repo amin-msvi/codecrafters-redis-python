@@ -1,6 +1,6 @@
 import socket
 from typing_extensions import TYPE_CHECKING
-from app.commands.base import CommandFlags
+from app.commands.base import CommandFlags, CommandResult
 from app.config import ServerConfig
 from app.logger import get_logger
 from app.resp_encoder import encode_resp
@@ -30,7 +30,10 @@ class ReplicaRole(ServerRole):
         if not data:
             return
 
-        self._server.run_command(data)
+        responses = self._server.run_command(data)
+        for response in responses:
+            if isinstance(response["response"], CommandResult) and response["response"].ack_master:
+                sock.sendall(encode_resp(response["response"].response))
 
     def get_extra_sockets(self) -> list[socket.socket]:
         return [self._master_socket]
