@@ -38,9 +38,10 @@ def main():
     config = ServerConfig(port=args.port)
 
     # Dependencies
+    server_info = get_server_info(args)
     registry = CommandRegistry()
     dependencies = {
-        ServerInfo: get_server_info(args),
+        ServerInfo: server_info,
         DataBase: DataBase(),
     }
     registry.auto_discover(dependencies)
@@ -48,7 +49,7 @@ def main():
     # Role assignment
     if args.replicaof:
         master_info = MasterInfo.from_string(args.replicaof)
-        role = ReplicaRole(master_info, config)
+        role = ReplicaRole(master_info, server_info, config)
     else:
         role = MasterRole()
 

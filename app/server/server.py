@@ -46,7 +46,8 @@ class RedisServer:
         responses = []
         for parsed_data, cmd_name, _ in requests:
             responses.append(
-                {"response": self._registry.execute(parsed_data), "cmd_name": cmd_name}
+                {"response": self._registry.execute(parsed_data), "cmd_name": cmd_name,
+                    "offset_count": len(data)}
             )
         return responses
 

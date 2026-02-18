@@ -22,6 +22,9 @@ class Replication(InfoSection):
     role: str = field(default_factory=lambda: "master")
     master_replid: str = field(default_factory=lambda: uuid4().hex)
     master_repl_offset: int = field(default_factory=lambda: 0)
+    
+    def incr_offset(self, count: int):
+        self.master_repl_offset += count
 
 
 @dataclass
