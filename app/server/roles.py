@@ -26,20 +26,29 @@ class ReplicaRole(ServerRole):
         self._server = server
         self._connect_to_master()
         self._handshake()
-    
-    def _process_buffer(self, sock):
-        responses = self._server.run_command(self._buffer)
-        self._buffer = b""
-        for response in responses:
-            if isinstance(response["response"], CommandResult):
-                print("RESPONSE", response)
-                if response["response"].ack_master:
-                    sock.sendall(encode_resp(response["response"].response))
+        self._read_rdb()
+        self._master_socket.setblocking(False)
+        self._process_buffer(self._master_socket)
 
-    def handle_socket(self, sock: socket.socket) -> None:
-        self._recv_into_buffer()
+    def _process_buffer(self, sock):
         if not self._buffer:
             return
+        responses = self._server.run_command(self._buffer)
+        for response in responses:
+            if isinstance(response["response"], CommandResult):
+                if response["response"].ack_master:
+                    sock.sendall(encode_resp(response["response"].response))
+        self._buffer = b""
+
+    def handle_socket(self, sock: socket.socket) -> None:
+        try:
+            data = self._master_socket.recv(1024)
+        except BlockingIOError:
+            return
+        if data == b"":
+            self._master_socket = None
+            return
+        self._buffer += data
         self._process_buffer(sock)
 
     # Private Methods
@@ -60,8 +69,11 @@ class ReplicaRole(ServerRole):
             except RESPProtocolError:
                 self._recv_into_buffer()
 
-    def _read_rdb(self) -> bytes:
-        self._recv_into_buffer()
+    def _read_rdb(self) -> bytes | None:
+        if not self._buffer:
+            self._recv_into_buffer()
+        if not self._buffer:
+            return
         while self._buffer:
             length_end_idx = self._buffer.index(b"\r\n")
             length = int(self._buffer[1:length_end_idx].decode("utf-8"))
@@ -117,14 +129,12 @@ class ReplicaRole(ServerRole):
         psync: bytes = encode_resp(["PSYNC", "?", "-1"])
         self._master_socket.sendall(psync)
         response = self._read_message()
-        self._read_rdb()
-        self._process_buffer(self._master_socket)
 
     def get_extra_sockets(self) -> list[socket.socket]:
-        return [self._master_socket]
+        return [self._master_socket] if self._master_socket else []
 
     def owns_socket(self, sock: socket.socket) -> bool:
-        return sock == self._master_socket
+        return self._master_socket is not None and sock == self._master_socket
 
     def add_socket(self, sock: socket.socket) -> None:
         return
