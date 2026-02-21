@@ -10,6 +10,7 @@ from app.logger import get_logger
 from app.resp_encoder import encode_resp
 from app.resp_parser import parse_resp
 from app.server.roles import ServerRole
+from app.server.server_info import ServerInfo
 from app.types import NullArray, RESPError, RESPProtocolError, RESPValue, SimpleString
 
 logger = get_logger(__name__)
@@ -17,7 +18,7 @@ logger = get_logger(__name__)
 
 class RedisServer:
     def __init__(
-        self, role: ServerRole, registry: CommandRegistry, config: ServerConfig
+        self, role: ServerRole, registry: CommandRegistry, config: ServerConfig, server_info: ServerInfo
     ):
         self._role = role
         self._config = config
@@ -26,6 +27,7 @@ class RedisServer:
         self._connections: list[socket.socket] = []
         self._blocking_state: BlockingState = BlockingState()
         self._transactions: dict[socket.socket, list[RESPValue]] = {}
+        self._server_info = server_info
 
     def start(self):
         logger.info("Starting server on %s:%d", self._config.host, self._config.port)
@@ -44,11 +46,11 @@ class RedisServer:
     ) -> list[dict[str, CommandResult | BlockingResponse | RDBSync | RESPError]]:
         requests = self._parse_request(data)
         responses = []
-        for parsed_data, cmd_name, _ in requests:
+        for parsed_data, cmd_name, _, offset in requests:
             responses.append(
-                {"response": self._registry.execute(parsed_data), "cmd_name": cmd_name,
-                    "offset_count": len(data)}
+                {"response": self._registry.execute(parsed_data), "cmd_name": cmd_name}
             )
+            self._server_info.replication.incr_offset(offset)
         return responses
 
     def _run_event_loop(self):
@@ -76,7 +78,7 @@ class RedisServer:
             return
 
         parsed_requests = self._parse_request(data)
-        for parsed_data, cmd_name, cmd_flags in parsed_requests:
+        for parsed_data, cmd_name, cmd_flags, _ in parsed_requests:
             response = self._process_request(parsed_data, cmd_name, client)
 
             if response:
@@ -91,17 +93,19 @@ class RedisServer:
 
     def _parse_request(
         self, data: bytes
-    ) -> list[tuple[list, str, CommandFlags | None]]:
+    ) -> list[tuple[list, str, CommandFlags | None, int]]:
         requests = []
         remaining = data
 
         while remaining:
+            len_remaining = len(remaining)
             parsed_data, remaining = parse_resp(remaining)
+            consumed = len_remaining - len(remaining)
             if not isinstance(parsed_data, list):
                 continue
             cmd = parsed_data[0].upper()
             cmd_flags = self._registry.get_flags(cmd)
-            requests.append((parsed_data, cmd, cmd_flags))
+            requests.append((parsed_data, cmd, cmd_flags, consumed))
         return requests
 
     def _process_request(

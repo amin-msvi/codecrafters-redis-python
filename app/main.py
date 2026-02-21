@@ -49,12 +49,12 @@ def main():
     # Role assignment
     if args.replicaof:
         master_info = MasterInfo.from_string(args.replicaof)
-        role = ReplicaRole(master_info, server_info, config)
+        role = ReplicaRole(master_info, config)
     else:
         role = MasterRole()
 
     # Create and start server
-    server = RedisServer(role, registry, config)
+    server = RedisServer(role, registry, config, server_info)
     server.start()
 
 

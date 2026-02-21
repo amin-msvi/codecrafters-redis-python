@@ -6,7 +6,7 @@ from app.logger import get_logger
 from app.resp_encoder import encode_resp
 from app.resp_parser import parse_resp
 from app.server.base_role import ServerRole
-from app.server.server_info import MasterInfo, ServerInfo
+from app.server.server_info import MasterInfo
 from app.types import RESPProtocolError, RESPValue
 
 if TYPE_CHECKING:
@@ -17,9 +17,8 @@ logger = get_logger(__name__)
 
 
 class ReplicaRole(ServerRole):
-    def __init__(self, master_info: MasterInfo, server_info: ServerInfo, config: ServerConfig):
+    def __init__(self, master_info: MasterInfo, config: ServerConfig):
         self._master_info = master_info
-        self._server_info = server_info
         self._config = config
         self._buffer: bytes = b""
 
@@ -34,7 +33,6 @@ class ReplicaRole(ServerRole):
         for response in responses:
             if isinstance(response["response"], CommandResult):
                 print("RESPONSE", response)
-                # self._server_info.replication.incr_offset(response["offset_count"])
                 if response["response"].ack_master:
                     sock.sendall(encode_resp(response["response"].response))
 
