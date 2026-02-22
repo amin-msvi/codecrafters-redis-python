@@ -7,7 +7,7 @@ from app.types import RESPProtocolError, RESPValue
 class RESPBuffer:
     def __init__(self, buffer: bytes = b""):
         self._buffer = buffer
-    
+
     def append(self, data: bytes):
         self._buffer += data
 
@@ -30,7 +30,7 @@ class RESPBuffer:
         if data == b"":
             return
         self.append(data)
-    
+
     def read_one(self, sock: socket.socket) -> RESPValue:
         self.recv(sock)
         while self:
@@ -49,7 +49,7 @@ class RESPBuffer:
 
     def flush(self):
         self._buffer = b""
-    
+
     def get_data(self) -> bytes:
         return self._buffer
 

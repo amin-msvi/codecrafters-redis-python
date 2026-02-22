@@ -18,7 +18,11 @@ logger = get_logger(__name__)
 
 class RedisServer:
     def __init__(
-        self, role: ServerRole, registry: CommandRegistry, config: ServerConfig, server_info: ServerInfo
+        self,
+        role: ServerRole,
+        registry: CommandRegistry,
+        config: ServerConfig,
+        server_info: ServerInfo,
     ):
         self._role = role
         self._config = config
@@ -79,7 +83,7 @@ class RedisServer:
                 else:
                     client.sendall(response)
 
-            command_bytes = data[reader_pointer:reader_pointer + consumed]
+            command_bytes = data[reader_pointer : reader_pointer + consumed]
             reader_pointer += consumed
             self._role.after_command(command_bytes, cmd_flag)
 

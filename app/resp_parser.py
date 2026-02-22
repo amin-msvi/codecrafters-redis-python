@@ -292,9 +292,7 @@ def parse_resp(
         )
 
 
-def parse_request(
-    data: bytes
-) -> list[tuple[list, str, int]]:
+def parse_request(data: bytes) -> list[tuple[list, str, int]]:
     requests = []
     remaining = data
 

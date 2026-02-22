@@ -5,8 +5,8 @@ from app.resp_encoder import encode_resp
 from app.server.buffer import RESPBuffer
 from app.server.server_info import MasterInfo
 
-
 logger = get_logger(__name__)
+
 
 class MasterConnection:
     def __init__(self, master_info: MasterInfo, config: ServerConfig):
@@ -24,17 +24,15 @@ class MasterConnection:
     def _connect(self) -> socket.socket:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            sock.connect(
-                (self._master_info.host, self._master_info.port)
-            )
+            sock.connect((self._master_info.host, self._master_info.port))
             logger.info(
                 f"Connected to master server at '{self._master_info.host}:{self._master_info.port}'"
             )
         except socket.error as e:
             logger.error("Connection Failed", e)
-        
+
         return sock
-    
+
     def _handshake(self, sock) -> None:
         """Applies 3-step Redis handshake protocol between replica and master"""
 

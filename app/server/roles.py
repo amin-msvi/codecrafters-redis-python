@@ -7,12 +7,17 @@ from app.server.base_role import ServerRole
 from app.server.buffer import RESPBuffer
 from app.server.server_info import ServerInfo
 
-
 logger = get_logger(__name__)
 
 
 class ReplicaRole(ServerRole):
-    def __init__(self, master_socket: socket.socket, server_info: ServerInfo, registry: CommandRegistry, buffer: bytes):
+    def __init__(
+        self,
+        master_socket: socket.socket,
+        server_info: ServerInfo,
+        registry: CommandRegistry,
+        buffer: bytes,
+    ):
         self._master_socket: socket.socket | None = master_socket
         self._server_info = server_info
         self._registry = registry
