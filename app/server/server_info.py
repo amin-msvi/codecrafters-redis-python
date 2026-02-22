@@ -20,11 +20,15 @@ class Server(InfoSection):
 @dataclass
 class Replication(InfoSection):
     role: str = field(default_factory=lambda: "master")
+    connected_slaves: int = 0
     master_replid: str = field(default_factory=lambda: uuid4().hex)
     master_repl_offset: int = field(default_factory=lambda: 0)
 
     def incr_offset(self, count: int):
         self.master_repl_offset += count
+    
+    def incr_slaves(self):
+        self.connected_slaves += 1
 
 
 @dataclass

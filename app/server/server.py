@@ -80,6 +80,7 @@ class RedisServer:
                     client.sendall(response[0])
                     client.sendall(response[1])
                     self._role.add_socket(client)
+                    self._server_info.replication.incr_slaves()
                 else:
                     client.sendall(response)
 

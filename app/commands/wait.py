@@ -10,7 +10,7 @@ class WaitCommand(Command):
         self._server_info = server_info
     
     def execute(self, args: list[str]) -> CommandResult | BlockingResponse | RDBSync:
-        n_replica = int(args[0])
-        wait_for = int(args[1])
-        return CommandResult(response=0)
+        num_replicas = int(args[0])
+        timeout = int(args[1])
+        return CommandResult(response=self._server_info.replication.connected_slaves)
         
