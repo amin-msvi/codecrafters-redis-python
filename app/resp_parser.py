@@ -290,3 +290,20 @@ def parse_resp(
         raise RESPProtocolError(
             f"Unknown RESP type indicator: {first_byte!r}", data=data, position=0
         )
+
+
+def parse_request(
+    data: bytes
+) -> list[tuple[list, str, int]]:
+    requests = []
+    remaining = data
+
+    while remaining:
+        len_remaining = len(remaining)
+        parsed_data, remaining = parse_resp(remaining)
+        consumed = len_remaining - len(remaining)
+        if not isinstance(parsed_data, list):
+            continue
+        cmd = parsed_data[0].upper()
+        requests.append((parsed_data, cmd, consumed))
+    return requests

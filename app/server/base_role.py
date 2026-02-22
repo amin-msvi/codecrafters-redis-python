@@ -1,11 +1,6 @@
 from abc import ABC, abstractmethod
 import socket
-from typing_extensions import TYPE_CHECKING
-
 from app.commands.base import CommandFlags
-
-if TYPE_CHECKING:
-    from app.server.server import RedisServer
 
 
 class ServerRole(ABC):
@@ -17,7 +12,7 @@ class ServerRole(ABC):
     """
 
     @abstractmethod
-    def on_startup(self, server: "RedisServer") -> None:
+    def on_startup(self) -> None:
         """Called once before the event loop starts."""
         ...
 
@@ -32,7 +27,7 @@ class ServerRole(ABC):
         ...
 
     @abstractmethod
-    def handle_socket(self, sock: socket.socket) -> None:
+    def handle_socket(self) -> None:
         """Handle data from role-specific socket (e.g., master socket)"""
         ...
 

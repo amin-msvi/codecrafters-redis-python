@@ -12,6 +12,7 @@ from app.server import (
     RedisServer,
     ServerInfo,
 )
+from app.server.connection import MasterConnection
 
 
 def parse_cli_args() -> Namespace:
@@ -49,7 +50,9 @@ def main():
     # Role assignment
     if args.replicaof:
         master_info = MasterInfo.from_string(args.replicaof)
-        role = ReplicaRole(master_info, config)
+        connection = MasterConnection(master_info, config)
+        master_socket, buffer = connection.establish()
+        role = ReplicaRole(master_socket, server_info, registry, buffer)
     else:
         role = MasterRole()
 

@@ -1,134 +1,57 @@
 import socket
-from typing_extensions import TYPE_CHECKING
 from app.commands.base import CommandFlags, CommandResult
-from app.config import ServerConfig
+from app.commands.registry import CommandRegistry
 from app.logger import get_logger
 from app.resp_encoder import encode_resp
-from app.resp_parser import parse_resp
 from app.server.base_role import ServerRole
-from app.server.server_info import MasterInfo
-from app.types import RESPProtocolError, RESPValue
-
-if TYPE_CHECKING:
-    from app.server.server import RedisServer
+from app.server.buffer import RESPBuffer
+from app.server.server_info import ServerInfo
 
 
 logger = get_logger(__name__)
 
 
 class ReplicaRole(ServerRole):
-    def __init__(self, master_info: MasterInfo, config: ServerConfig):
-        self._master_info = master_info
-        self._config = config
-        self._buffer: bytes = b""
+    def __init__(self, master_socket: socket.socket, server_info: ServerInfo, registry: CommandRegistry, buffer: bytes):
+        self._master_socket: socket.socket | None = master_socket
+        self._server_info = server_info
+        self._registry = registry
+        self._buffer = RESPBuffer(buffer)
 
-    def on_startup(self, server: "RedisServer") -> None:
-        self._server = server
-        self._connect_to_master()
-        self._handshake()
-        self._read_rdb()
+    def on_startup(self) -> None:
+        assert self._master_socket is not None
         self._master_socket.setblocking(False)
-        self._process_buffer(self._master_socket)
+        self._process_buffer()
 
-    def _process_buffer(self, sock):
-        if not self._buffer:
+    def handle_socket(self) -> None:
+        if self._master_socket is None:
             return
-        responses = self._server.run_command(self._buffer)
-        for response in responses:
-            if isinstance(response["response"], CommandResult):
-                if response["response"].ack_master:
-                    sock.sendall(encode_resp(response["response"].response))
-        self._buffer = b""
-
-    def handle_socket(self, sock: socket.socket) -> None:
         try:
             data = self._master_socket.recv(1024)
         except BlockingIOError:
             return
+
         if data == b"":
             self._master_socket = None
             return
-        self._buffer += data
-        self._process_buffer(sock)
+
+        self._buffer.append(data)
+        self._process_buffer()
 
     # Private Methods
-    def _recv_into_buffer(self) -> None:
-        data = self._master_socket.recv(1024)
-        if data == b"":
-            return
-        self._buffer += data
-
-    def _read_message(self) -> RESPValue:
-        self._recv_into_buffer()
-        
-        while self._buffer:
-            try:
-                parsed_data, remaining = parse_resp(self._buffer)
-                self._buffer = remaining
-                return parsed_data
-            except RESPProtocolError:
-                self._recv_into_buffer()
-
-    def _read_rdb(self) -> bytes | None:
-        if not self._buffer:
-            self._recv_into_buffer()
+    def _process_buffer(self):
         if not self._buffer:
             return
-        while self._buffer:
-            length_end_idx = self._buffer.index(b"\r\n")
-            length = int(self._buffer[1:length_end_idx].decode("utf-8"))
-            data_start = length_end_idx + 2
-            data_end = data_start + length
-            string_data = self._buffer[data_start:data_end]
-            self._buffer = self._buffer[data_end:]
-            return string_data
 
-    def _connect_to_master(self):
-        """
-        This method runs when this server is a replica and
-        wants to connect to the master server
-        """
+        requests = self._buffer.parse_all()
 
-        self._master_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self._master_socket.setblocking(False)
-        try:
-            self._master_socket.connect(
-                (self._master_info.host, self._master_info.port)
-            )
-            logger.info(
-                f"Connected to master server at '{self._master_info.host}:{self._master_info.port}'"
-            )
-        except socket.error as e:
-            logger.error("Connection Failed", e)
-
-    def _handshake(self):
-        """Applies 3-step Redis handshake protocol between replica and master"""
-
-        # Step 1
-        self._master_socket.sendall(encode_resp(["PING"]))
-        response = self._read_message()
-        if response != "PONG":
-            return
-
-        # Step 2
-        replconf: bytes = encode_resp(
-            ["REPLCONF", "listening-port", str(self._config.port)]
-        )
-        self._master_socket.sendall(replconf)
-        response = self._read_message()
-        if response != "OK":
-            return
-
-        replconf = encode_resp(["REPLCONF", "capa", "psync2"])
-        self._master_socket.sendall(replconf)
-        response = self._read_message()
-        if response != "OK":
-            return
-
-        # Step 3
-        psync: bytes = encode_resp(["PSYNC", "?", "-1"])
-        self._master_socket.sendall(psync)
-        response = self._read_message()
+        for parsed_data, _, offset in requests:
+            response = self._registry.execute(parsed_data)
+            self._server_info.replication.incr_offset(offset)
+            if isinstance(response, CommandResult) and response.ack_master:
+                if self._master_socket is not None:
+                    self._master_socket.sendall(encode_resp(response.response))
+        self._buffer.flush()
 
     def get_extra_sockets(self) -> list[socket.socket]:
         return [self._master_socket] if self._master_socket else []
@@ -142,11 +65,12 @@ class ReplicaRole(ServerRole):
     def after_command(self, data: bytes, flags: CommandFlags | None) -> None:
         return
 
+
 class MasterRole(ServerRole):
     def __init__(self):
         self._replicas: list[socket.socket] = []
 
-    def on_startup(self, server: "RedisServer") -> None:
+    def on_startup(self) -> None:
         return
 
     def after_command(self, data: bytes, flags: CommandFlags | None) -> None:
@@ -163,5 +87,5 @@ class MasterRole(ServerRole):
     def get_extra_sockets(self) -> list[socket.socket]:
         return []
 
-    def handle_socket(self, sock: socket.socket) -> None:
+    def handle_socket(self) -> None:
         return

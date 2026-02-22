@@ -3,12 +3,12 @@ import socket
 from datetime import datetime, timedelta
 
 from app.blocking import BlockingState, WaitingClient
-from app.commands.base import BlockingResponse, CommandFlags, CommandResult, RDBSync
+from app.commands.base import BlockingResponse, CommandResult, RDBSync
 from app.commands.registry import CommandRegistry
 from app.config import ServerConfig
 from app.logger import get_logger
 from app.resp_encoder import encode_resp
-from app.resp_parser import parse_resp
+from app.resp_parser import parse_request
 from app.server.roles import ServerRole
 from app.server.server_info import ServerInfo
 from app.types import NullArray, RESPError, RESPProtocolError, RESPValue, SimpleString
@@ -35,23 +35,11 @@ class RedisServer:
             (self._config.host, self._config.port), reuse_port=True
         )
         self._server_socket.setblocking(False)
-        self._role.on_startup(self)
+        self._role.on_startup()
         try:
             self._run_event_loop()
         finally:
             self._shutdown()
-
-    def run_command(
-        self, data: bytes
-    ) -> list[dict[str, CommandResult | BlockingResponse | RDBSync | RESPError]]:
-        requests = self._parse_request(data)
-        responses = []
-        for parsed_data, cmd_name, _, offset in requests:
-            responses.append(
-                {"response": self._registry.execute(parsed_data), "cmd_name": cmd_name}
-            )
-            self._server_info.replication.incr_offset(offset)
-        return responses
 
     def _run_event_loop(self):
         while True:
@@ -64,7 +52,7 @@ class RedisServer:
                 if sock == self._server_socket:
                     self._accept_connection()
                 elif self._role.owns_socket(sock):
-                    self._role.handle_socket(sock)
+                    self._role.handle_socket()
                 else:
                     self._handle_client(sock)
 
@@ -77,9 +65,11 @@ class RedisServer:
             self._remove_client(client)
             return
 
-        parsed_requests = self._parse_request(data)
-        for parsed_data, cmd_name, cmd_flags, _ in parsed_requests:
+        reader_pointer = 0
+        parsed_requests = parse_request(data)
+        for parsed_data, cmd_name, consumed in parsed_requests:
             response = self._process_request(parsed_data, cmd_name, client)
+            cmd_flag = self._registry.get_flags(cmd_name)
 
             if response:
                 if isinstance(response, tuple):
@@ -89,24 +79,9 @@ class RedisServer:
                 else:
                     client.sendall(response)
 
-            self._role.after_command(data, cmd_flags)
-
-    def _parse_request(
-        self, data: bytes
-    ) -> list[tuple[list, str, CommandFlags | None, int]]:
-        requests = []
-        remaining = data
-
-        while remaining:
-            len_remaining = len(remaining)
-            parsed_data, remaining = parse_resp(remaining)
-            consumed = len_remaining - len(remaining)
-            if not isinstance(parsed_data, list):
-                continue
-            cmd = parsed_data[0].upper()
-            cmd_flags = self._registry.get_flags(cmd)
-            requests.append((parsed_data, cmd, cmd_flags, consumed))
-        return requests
+            command_bytes = data[reader_pointer:reader_pointer + consumed]
+            reader_pointer += consumed
+            self._role.after_command(command_bytes, cmd_flag)
 
     def _process_request(
         self, parsed_data: list[str], cmd_name: str, client: socket.socket
