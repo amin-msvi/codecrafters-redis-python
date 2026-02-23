@@ -47,6 +47,9 @@ class Command(ABC):
     - name: The command name (e.g., "GET")
     - arity: Tuple of (min_args, max_args), use float('inf') for unlimited
     - execute(): The command logic
+
+    If the object that implements Command needs to contain some specific
+    flags, they should be specified in the flags attribute.
     """
 
     name: str
