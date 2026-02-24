@@ -56,7 +56,7 @@ class RedisServer:
                 if sock == self._server_socket:
                     self._accept_connection()
                 elif self._role.owns_socket(sock):
-                    self._role.handle_socket()
+                    self._role.handle_socket(sock)
                 else:
                     self._handle_client(sock)
 
@@ -80,7 +80,6 @@ class RedisServer:
                     client.sendall(response[0])
                     client.sendall(response[1])
                     self._role.add_socket(client)
-                    self._server_info.replication.incr_slaves()
                 else:
                     client.sendall(response)
 

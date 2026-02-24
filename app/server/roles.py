@@ -21,14 +21,14 @@ class ReplicaRole(ServerRole):
         self._master_socket: socket.socket | None = master_socket
         self._server_info = server_info
         self._registry = registry
-        self._buffer = RESPBuffer(buffer)
+        self._buffer: RESPBuffer = RESPBuffer(buffer)
 
     def on_startup(self) -> None:
         assert self._master_socket is not None
         self._master_socket.setblocking(False)
         self._process_buffer()
 
-    def handle_socket(self) -> None:
+    def handle_socket(self, sock: socket.socket) -> None:
         if self._master_socket is None:
             return
         try:
@@ -72,13 +72,14 @@ class ReplicaRole(ServerRole):
 
 
 class MasterRole(ServerRole):
-    def __init__(self):
+    def __init__(self, server_info: ServerInfo, registry: CommandRegistry):
         self._replicas: list[socket.socket] = []
 
     def on_startup(self) -> None:
         return
 
     def after_command(self, data: bytes, flags: CommandFlags | None) -> None:
+        self._server_info.replication.incr_offset(len(data))
         if self._replicas and flags and flags.write:
             for replica in self._replicas:
                 replica.sendall(data)
@@ -87,10 +88,11 @@ class MasterRole(ServerRole):
         return False
 
     def add_socket(self, sock: socket.socket) -> None:
+        self._server_info.replication.incr_slaves()
         return self._replicas.append(sock)
 
     def get_extra_sockets(self) -> list[socket.socket]:
         return []
 
-    def handle_socket(self) -> None:
+    def handle_socket(self, sock: socket.socket) -> None:
         return

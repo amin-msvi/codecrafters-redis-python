@@ -27,7 +27,7 @@ class ServerRole(ABC):
         ...
 
     @abstractmethod
-    def handle_socket(self) -> None:
+    def handle_socket(self, sock: socket.socket) -> None:
         """Handle data from role-specific socket (e.g., master socket)"""
         ...
 
