@@ -54,7 +54,7 @@ def main():
         master_socket, buffer = connection.establish()
         role = ReplicaRole(master_socket, server_info, registry, buffer)
     else:
-        role = MasterRole()
+        role = MasterRole(server_info, registry)
 
     # Create and start server
     server = RedisServer(role, registry, config, server_info)
