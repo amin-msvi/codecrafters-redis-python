@@ -9,7 +9,7 @@ class WaitCommand(Command):
 
     def __init__(self, server_info: ServerInfo):
         self._server_info = server_info
-    
+
     def execute(self, args: list[str]) -> CommandResult | WaitBlocker:
         num_replicas = int(args[0])
         timeout = int(args[1])
@@ -18,5 +18,5 @@ class WaitCommand(Command):
         return WaitBlocker(
             min_replicas=num_replicas,
             target_offset=target_offset,
-            timeout=expiry if timeout != 0 else None
+            timeout=expiry if timeout != 0 else None,
         )

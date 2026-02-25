@@ -26,7 +26,7 @@ class Replication(InfoSection):
 
     def incr_offset(self, count: int):
         self.master_repl_offset += count
-    
+
     def incr_slaves(self):
         self.connected_slaves += 1
 

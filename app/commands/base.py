@@ -68,7 +68,9 @@ class Command(ABC):
     flags: CommandFlags = CommandFlags()
 
     @abstractmethod
-    def execute(self, args: list[str]) -> CommandResult | BlockingResponse | RDBSync | WaitBlocker:
+    def execute(
+        self, args: list[str]
+    ) -> CommandResult | BlockingResponse | RDBSync | WaitBlocker:
         """
         Execute the command with the given arguments.
 

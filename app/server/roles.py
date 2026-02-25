@@ -70,10 +70,10 @@ class ReplicaRole(ServerRole):
 
     def after_command(self, data: bytes, flags: CommandFlags | None) -> None:
         return
-    
+
     def on_wait(self, waiter_blocker: WaitBlocker, sock: socket.socket) -> None:
         return
-    
+
     def handle_expired_clients(self) -> None:
         return
 
@@ -89,11 +89,7 @@ class MasterRole(ServerRole):
     def on_startup(self) -> None:
         return
 
-    def after_command(
-            self,
-            data: bytes,
-            flags: CommandFlags | None
-    ) -> None:
+    def after_command(self, data: bytes, flags: CommandFlags | None) -> None:
         if self._replicas and flags and flags.write:
             self._server_info.replication.incr_offset(len(data))
             for replica in self._replicas:
@@ -121,18 +117,20 @@ class MasterRole(ServerRole):
         waiter_blocker.socket = sock
         self._wait_waiter = waiter_blocker
 
-        replconf: bytes = encode_resp(
-            ["REPLCONF", "GETACK", "*"]
-        )
+        replconf: bytes = encode_resp(["REPLCONF", "GETACK", "*"])
         for replica in self._replicas:
             replica.sendall(replconf)
-    
+
     def handle_expired_clients(self) -> None:
         if not self._wait_waiter:
             return
 
         now = datetime.now()
-        if self._wait_waiter.socket and self._wait_waiter.timeout and now >= self._wait_waiter.timeout:
+        if (
+            self._wait_waiter.socket
+            and self._wait_waiter.timeout
+            and now >= self._wait_waiter.timeout
+        ):
             self._wait_waiter.socket.sendall(encode_resp(self._wait_waiter.acked))
             self._wait_waiter = None
 
@@ -141,19 +139,18 @@ class MasterRole(ServerRole):
             data = sock.recv(1024)
         except BlockingIOError:
             return
-        
+
         if data == b"":
             self._replicas.remove(sock)
             return
-        
+
         self._buffer.append(data)
         self._process_buffer()
 
     def _process_buffer(self):
         if not self._buffer:
             return
-        
-        
+
         requests = self._buffer.parse_all()
 
         if not self._wait_waiter:
@@ -167,9 +164,14 @@ class MasterRole(ServerRole):
                 if offset >= self._server_info.replication.master_repl_offset:
                     if self._wait_waiter:
                         self._wait_waiter.acked += 1
-                if self._wait_waiter and self._wait_waiter.min_replicas <= self._wait_waiter.acked:
+                if (
+                    self._wait_waiter
+                    and self._wait_waiter.min_replicas <= self._wait_waiter.acked
+                ):
                     assert isinstance(self._wait_waiter.socket, socket.socket)
-                    self._wait_waiter.socket.sendall(encode_resp(self._wait_waiter.acked))
+                    self._wait_waiter.socket.sendall(
+                        encode_resp(self._wait_waiter.acked)
+                    )
                     self._wait_waiter.acked = 0
                     self._wait_waiter = None
         self._buffer.flush()

@@ -43,6 +43,6 @@ class ServerRole(ABC):
 
     @abstractmethod
     def on_wait(self, waiter_blocker: WaitBlocker, sock: socket.socket) -> None: ...
-    
+
     @abstractmethod
     def handle_expired_clients(self) -> None: ...

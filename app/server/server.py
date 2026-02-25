@@ -76,8 +76,10 @@ class RedisServer:
             response = self._process_request(parsed_data, cmd_name, client)
             cmd_flag = self._registry.get_flags(cmd_name)
 
-            if response:  
-                if isinstance(response, tuple):  # RDBSync case: FULLRESYNC header + RDB Header
+            if response:
+                if isinstance(
+                    response, tuple
+                ):  # RDBSync case: FULLRESYNC header + RDB Header
                     client.sendall(response[0])
                     client.sendall(response[1])
                     self._role.add_socket(client)
