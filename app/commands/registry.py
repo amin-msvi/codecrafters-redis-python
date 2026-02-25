@@ -7,6 +7,7 @@ from app.commands.base import (
     CommandFlags,
     CommandResult,
     RDBSync,
+    WaitBlocker,
 )
 from app.types import RESPError, RESPValue
 
@@ -27,7 +28,7 @@ class CommandRegistry:
 
     def execute(
         self, command_input: RESPValue
-    ) -> CommandResult | BlockingResponse | RDBSync | RESPError:
+    ) -> CommandResult | BlockingResponse | RDBSync | WaitBlocker | RESPError:
         """Main entry point - parse input, validate, and execute."""
         if command_input is None:
             return RESPError("empty command")

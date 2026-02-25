@@ -3,7 +3,7 @@ import socket
 from datetime import datetime, timedelta
 
 from app.blocking import BlockingState, WaitingClient
-from app.commands.base import BlockingResponse, CommandResult, RDBSync
+from app.commands.base import BlockingResponse, CommandResult, RDBSync, WaitBlocker
 from app.commands.registry import CommandRegistry
 from app.config import ServerConfig
 from app.logger import get_logger
@@ -61,6 +61,7 @@ class RedisServer:
                     self._handle_client(sock)
 
             self._handle_expired_blockers()
+            self._role.handle_expired_clients()
 
     def _handle_client(self, client: socket.socket):
         data = client.recv(self._config.recv_buffer_size)
@@ -126,6 +127,9 @@ class RedisServer:
             if isinstance(result, RDBSync):
                 return encode_resp(result.response), encode_resp(result.rdb)
 
+            if isinstance(result, WaitBlocker):
+                self._role.on_wait(result, client)
+                return None
 
             return encode_resp(result)
 

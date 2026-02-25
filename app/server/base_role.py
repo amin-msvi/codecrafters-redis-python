@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import socket
-from app.commands.base import CommandFlags
+from app.commands.base import CommandFlags, WaitBlocker
 
 
 class ServerRole(ABC):
@@ -40,3 +40,9 @@ class ServerRole(ABC):
 
     @abstractmethod
     def add_socket(self, sock: socket.socket) -> None: ...
+
+    @abstractmethod
+    def on_wait(self, waiter_blocker: WaitBlocker, sock: socket.socket) -> None: ...
+    
+    @abstractmethod
+    def handle_expired_clients(self) -> None: ...

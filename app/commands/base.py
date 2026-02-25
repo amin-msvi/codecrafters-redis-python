@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import datetime
+import socket
 from typing import Any, Callable
 
 from app.types import RDB, EncodeableValue, SimpleString
@@ -23,6 +25,15 @@ class UnblockEvent:
 class RDBSync:
     response: SimpleString
     rdb: RDB
+
+
+@dataclass
+class WaitBlocker:
+    min_replicas: int
+    target_offset: int
+    timeout: datetime | None
+    socket: socket.socket | None = None
+    acked: int = 0
 
 
 @dataclass
@@ -57,7 +68,7 @@ class Command(ABC):
     flags: CommandFlags = CommandFlags()
 
     @abstractmethod
-    def execute(self, args: list[str]) -> CommandResult | BlockingResponse | RDBSync:
+    def execute(self, args: list[str]) -> CommandResult | BlockingResponse | RDBSync | WaitBlocker:
         """
         Execute the command with the given arguments.
 

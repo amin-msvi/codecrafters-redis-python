@@ -17,7 +17,7 @@ class ReplConfCommand(Command):
             return CommandResult(response=SimpleString("OK"))
         if capa := parsed_args.get("capa"):  # noqa
             return CommandResult(response=SimpleString("OK"))
-        if ack := parsed_args.get("GETACK"):  # noqa
+        elif getack := parsed_args.get("GETACK"):  # noqa
             offset = self._server_info.replication.master_repl_offset
             return CommandResult(
                 response=["REPLCONF", "ACK", str(offset)], ack_master=True
