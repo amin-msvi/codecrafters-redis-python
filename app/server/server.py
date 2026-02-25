@@ -75,8 +75,8 @@ class RedisServer:
             response = self._process_request(parsed_data, cmd_name, client)
             cmd_flag = self._registry.get_flags(cmd_name)
 
-            if response:
-                if isinstance(response, tuple):
+            if response:  
+                if isinstance(response, tuple):  # RDBSync case: FULLRESYNC header + RDB Header
                     client.sendall(response[0])
                     client.sendall(response[1])
                     self._role.add_socket(client)
@@ -114,6 +114,11 @@ class RedisServer:
 
             result = self._registry.execute(parsed_data)
 
+            if isinstance(result, CommandResult):
+                if result.event:
+                    self._try_unblock(result.event.key)
+                return encode_resp(result.response)
+
             if isinstance(result, BlockingResponse):
                 self._add_blocker(result, client)
                 return None
@@ -121,10 +126,6 @@ class RedisServer:
             if isinstance(result, RDBSync):
                 return encode_resp(result.response), encode_resp(result.rdb)
 
-            if isinstance(result, CommandResult):
-                if result.event:
-                    self._try_unblock(result.event.key)
-                return encode_resp(result.response)
 
             return encode_resp(result)
 

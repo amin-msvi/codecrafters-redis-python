@@ -73,8 +73,12 @@ class ReplicaRole(ServerRole):
 
 class MasterRole(ServerRole):
     def __init__(self, server_info: ServerInfo, registry: CommandRegistry):
+        self._registry = registry
+        self._server_info = server_info
         self._replicas: list[socket.socket] = []
-
+        self._buffer: RESPBuffer = RESPBuffer()
+        self._number_of_synced_replicas = 0
+            
     def on_startup(self) -> None:
         return
 
