@@ -4,7 +4,6 @@ from app.commands.base import CommandFlags, CommandResult, WaitBlocker
 from app.commands.registry import CommandRegistry
 from app.logger import get_logger
 from app.resp_encoder import encode_resp
-from app.resp_parser import parse_request
 from app.server.base_role import ServerRole
 from app.server.buffer import RESPBuffer
 from app.server.server_info import ServerInfo
@@ -86,7 +85,6 @@ class MasterRole(ServerRole):
         self._replicas: list[socket.socket] = []
         self._buffer: RESPBuffer = RESPBuffer()
         self._wait_waiter: WaitBlocker | None = None
-        self._number_of_synced_replicas = 0
 
     def on_startup(self) -> None:
         return
@@ -96,24 +94,11 @@ class MasterRole(ServerRole):
             data: bytes,
             flags: CommandFlags | None
     ) -> None:
-        self._server_info.replication.incr_offset(len(data))
         if self._replicas and flags and flags.write:
+            self._server_info.replication.incr_offset(len(data))
             for replica in self._replicas:
                 replica.sendall(data)
             return
-
-        parsed_data, cmd, ـ = parse_request(data)[0]
-        
-        if cmd == "WAIT":
-            response = self._registry.execute(parsed_data)
-            if isinstance(response, WaitBlocker):
-                self._wait_waiter = response
-            # 2.2. Propagate to replicas to get the master_offset
-            replconf: bytes = encode_resp(
-                ["REPLCONF", "GETACK", "*"]
-            )
-            for replica in self._replicas:
-                replica.sendall(replconf)
 
     def owns_socket(self, sock: socket.socket) -> bool:
         return self._replicas is not None and sock in self._replicas
@@ -148,8 +133,7 @@ class MasterRole(ServerRole):
 
         now = datetime.now()
         if self._wait_waiter.socket and self._wait_waiter.timeout and now >= self._wait_waiter.timeout:
-            self._wait_waiter.socket.sendall(encode_resp(self._number_of_synced_replicas))
-            self._number_of_synced_replicas = 0
+            self._wait_waiter.socket.sendall(encode_resp(self._wait_waiter.acked))
             self._wait_waiter = None
 
     def handle_socket(self, sock: socket.socket) -> None:
@@ -173,6 +157,7 @@ class MasterRole(ServerRole):
         requests = self._buffer.parse_all()
 
         if not self._wait_waiter:
+            self._buffer.flush()
             return
 
         for parsed_data, cmd_name, offset in requests:

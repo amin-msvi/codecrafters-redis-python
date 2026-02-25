@@ -81,6 +81,7 @@ class RedisServer:
                     client.sendall(response[0])
                     client.sendall(response[1])
                     self._role.add_socket(client)
+                    self._connections.remove(client)
                 else:
                     client.sendall(response)
 
