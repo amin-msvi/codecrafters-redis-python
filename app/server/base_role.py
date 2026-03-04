@@ -12,21 +12,6 @@ class ServerRole(ABC):
     """
 
     @abstractmethod
-    def on_startup(self) -> None:
-        """Called once before the event loop starts."""
-        ...
-
-    @abstractmethod
-    def after_command(self, data: bytes, flags: CommandFlags | None) -> None:
-        """Called after a command is processed and response is sent"""
-        ...
-
-    @abstractmethod
-    def get_extra_sockets(self) -> list[socket.socket]:
-        """Return additional sockets to monitor in select()."""
-        ...
-
-    @abstractmethod
     def handle_socket(self, sock: socket.socket) -> None:
         """Handle data from role-specific socket (e.g., master socket)"""
         ...
@@ -38,11 +23,23 @@ class ServerRole(ABC):
         """
         ...
 
-    @abstractmethod
-    def add_socket(self, sock: socket.socket) -> None: ...
+    def on_startup(self) -> None:
+        """Called once before the event loop starts."""
+        pass
 
-    @abstractmethod
-    def on_wait(self, waiter_blocker: WaitBlocker, sock: socket.socket) -> None: ...
+    def after_command(self, data: bytes, flags: CommandFlags | None) -> None:
+        """Called after a command is processed and response is sent"""
+        pass
 
-    @abstractmethod
-    def handle_expired_clients(self) -> None: ...
+    def get_extra_sockets(self) -> list[socket.socket]:
+        """Return additional sockets to monitor in select()."""
+        return []
+
+    def add_socket(self, sock: socket.socket) -> None:
+        pass
+
+    def on_wait(self, waiter_blocker: WaitBlocker, sock: socket.socket) -> None:
+        pass
+
+    def handle_expired_clients(self) -> None:
+        pass

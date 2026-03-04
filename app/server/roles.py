@@ -44,6 +44,12 @@ class ReplicaRole(ServerRole):
         self._buffer.append(data)
         self._process_buffer()
 
+    def get_extra_sockets(self) -> list[socket.socket]:
+        return [self._master_socket] if self._master_socket else []
+
+    def owns_socket(self, sock: socket.socket) -> bool:
+        return self._master_socket is not None and sock == self._master_socket
+
     # Private Methods
     def _process_buffer(self):
         if not self._buffer:
@@ -59,24 +65,6 @@ class ReplicaRole(ServerRole):
                     self._master_socket.sendall(encode_resp(response.response))
         self._buffer.flush()
 
-    def get_extra_sockets(self) -> list[socket.socket]:
-        return [self._master_socket] if self._master_socket else []
-
-    def owns_socket(self, sock: socket.socket) -> bool:
-        return self._master_socket is not None and sock == self._master_socket
-
-    def add_socket(self, sock: socket.socket) -> None:
-        return
-
-    def after_command(self, data: bytes, flags: CommandFlags | None) -> None:
-        return
-
-    def on_wait(self, waiter_blocker: WaitBlocker, sock: socket.socket) -> None:
-        return
-
-    def handle_expired_clients(self) -> None:
-        return
-
 
 class MasterRole(ServerRole):
     def __init__(self, server_info: ServerInfo, registry: CommandRegistry):
@@ -85,9 +73,6 @@ class MasterRole(ServerRole):
         self._replicas: list[socket.socket] = []
         self._buffer: RESPBuffer = RESPBuffer()
         self._wait_waiter: WaitBlocker | None = None
-
-    def on_startup(self) -> None:
-        return
 
     def after_command(self, data: bytes, flags: CommandFlags | None) -> None:
         if self._replicas and flags and flags.write:
