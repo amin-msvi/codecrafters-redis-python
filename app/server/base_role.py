@@ -1,6 +1,23 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 import socket
 from app.commands.base import CommandFlags, WaitBlocker
+
+
+@dataclass
+class SendResponse:
+    response: bytes
+
+
+@dataclass
+class TransferToRole:
+    header: bytes
+    rdb: bytes
+
+
+@dataclass
+class ParkClient:
+    pass
 
 
 class ServerRole(ABC):

@@ -9,6 +9,7 @@ from app.config import ServerConfig
 from app.logger import get_logger
 from app.resp_encoder import encode_resp
 from app.resp_parser import parse_request
+from app.server.base_role import ParkClient, SendResponse, TransferToRole
 from app.server.roles import ServerRole
 from app.server.server_info import ServerInfo
 from app.types import NullArray, RESPError, RESPProtocolError, RESPValue, SimpleString
@@ -73,19 +74,19 @@ class RedisServer:
         reader_pointer = 0
         parsed_requests = parse_request(data)
         for parsed_data, cmd_name, consumed in parsed_requests:
-            response = self._process_request(parsed_data, cmd_name, client)
+            action = self._process_request(parsed_data, cmd_name, client)
             cmd_flag = self._registry.get_flags(cmd_name)
-
-            if response:
-                if isinstance(
-                    response, tuple
-                ):  # RDBSync case: FULLRESYNC header + RDB Header
-                    client.sendall(response[0])
-                    client.sendall(response[1])
+            
+            match action:
+                case TransferToRole(header, rdb):
+                    client.sendall(header)
+                    client.sendall(rdb)
                     self._role.add_socket(client)
                     self._connections.remove(client)
-                else:
+                case SendResponse(response):
                     client.sendall(response)
+                case ParkClient():
+                    pass
 
             command_bytes = data[reader_pointer : reader_pointer + consumed]
             reader_pointer += consumed
@@ -93,52 +94,52 @@ class RedisServer:
 
     def _process_request(
         self, parsed_data: list[str], cmd_name: str, client: socket.socket
-    ) -> tuple[bytes, bytes] | bytes | None:
+    ) -> SendResponse | TransferToRole | ParkClient:
         """Execute, and encode a request."""
         try:
             # Transactions
             if cmd_name == "MULTI":
                 self._transactions[client] = []
-                return encode_resp(SimpleString("OK"))
+                return SendResponse(response=encode_resp(SimpleString("OK")))
 
             if cmd_name == "EXEC":
-                result = self._execute_transaction_commands(client)
-                return encode_resp(result)
+                transaction_results = self._execute_transaction_commands(client)
+                return SendResponse(response=encode_resp(transaction_results))
 
             if cmd_name == "DISCARD":
                 if client in self._transactions:
                     del self._transactions[client]
-                    return encode_resp(SimpleString("OK"))
+                    return SendResponse(response=encode_resp(SimpleString("OK")))
                 else:
-                    return encode_resp(RESPError("DISCARD without MULTI"))
+                    return SendResponse(response=encode_resp(RESPError("DISCARD without MULTI")))
 
             if client in self._transactions:
                 self._transactions[client].append(parsed_data)
-                return encode_resp(SimpleString("QUEUED"))
+                return SendResponse(response=encode_resp(SimpleString("QUEUED")))
 
             result = self._registry.execute(parsed_data)
 
             if isinstance(result, CommandResult):
                 if result.event:
                     self._try_unblock(result.event.key)
-                return encode_resp(result.response)
+                return SendResponse(response=encode_resp(result.response))
 
             if isinstance(result, BlockingResponse):
                 self._add_blocker(result, client)
-                return None
+                return ParkClient()
 
             if isinstance(result, RDBSync):
-                return encode_resp(result.response), encode_resp(result.rdb)
+                return TransferToRole(header=encode_resp(result.response), rdb=encode_resp(result.rdb))
 
             if isinstance(result, WaitBlocker):
                 self._role.on_wait(result, client)
-                return None
+                return ParkClient()
 
-            return encode_resp(result)
+            return SendResponse(response=encode_resp(result))
 
         except RESPProtocolError as e:
             logger.warning("Protocol error: %s", e)
-            return encode_resp(RESPError("ERR protocol error"))
+            return SendResponse(response=encode_resp(RESPError("ERR protocol error")))
 
     def _accept_connection(self) -> None:
         assert self._server_socket is not None
