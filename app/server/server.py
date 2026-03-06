@@ -12,7 +12,8 @@ from app.resp_parser import parse_request
 from app.server.base_role import ParkClient, SendResponse, TransferToRole
 from app.server.roles import ServerRole
 from app.server.server_info import ServerInfo
-from app.types import NullArray, RESPError, RESPProtocolError, RESPValue, SimpleString
+from app.server.transaction import ExecResult, TransactionState
+from app.types import NullArray, RESPError, RESPProtocolError
 
 logger = get_logger(__name__)
 
@@ -31,7 +32,7 @@ class RedisServer:
         self._server_socket: socket.socket | None = None
         self._connections: list[socket.socket] = []
         self._blocking_state: BlockingState = BlockingState()
-        self._transactions: dict[socket.socket, list[RESPValue]] = {}
+        self._transaction_state = TransactionState(registry)
         self._server_info = server_info
 
     def start(self):
@@ -97,25 +98,13 @@ class RedisServer:
     ) -> SendResponse | TransferToRole | ParkClient:
         """Execute, and encode a request."""
         try:
-            # Transactions
-            if cmd_name == "MULTI":
-                self._transactions[client] = []
-                return SendResponse(response=encode_resp(SimpleString("OK")))
-
-            if cmd_name == "EXEC":
-                transaction_results = self._execute_transaction_commands(client)
-                return SendResponse(response=encode_resp(transaction_results))
-
-            if cmd_name == "DISCARD":
-                if client in self._transactions:
-                    del self._transactions[client]
-                    return SendResponse(response=encode_resp(SimpleString("OK")))
-                else:
-                    return SendResponse(response=encode_resp(RESPError("DISCARD without MULTI")))
-
-            if client in self._transactions:
-                self._transactions[client].append(parsed_data)
-                return SendResponse(response=encode_resp(SimpleString("QUEUED")))
+            transaction_result = self._transaction_state.intercept(client, parsed_data, cmd_name)
+            if transaction_result is not None:
+                if isinstance(transaction_result, ExecResult):
+                    for key in transaction_result.events:
+                        self._try_unblock(key)
+                    return SendResponse(response=encode_resp(transaction_result.result))
+                return SendResponse(response=encode_resp(transaction_result))
 
             result = self._registry.execute(parsed_data)
 
@@ -146,26 +135,6 @@ class RedisServer:
         connection, address = self._server_socket.accept()
         logger.info("Connection received from %s", address)
         self._connections.append(connection)
-
-    # Transaction Methods
-    def _execute_transaction_commands(self, client: socket.socket):
-        args = self._transactions.get(client)
-        results = []
-        if args is None:
-            return RESPError("EXEC without MULTI")
-        if args == []:
-            del self._transactions[client]
-            return []
-        for arg in args:
-            result = self._registry.execute(arg)
-            if isinstance(result, CommandResult):
-                if result.event:
-                    self._try_unblock(result.event.key)
-                results.append(result.response)
-            else:
-                results.append(result)
-        del self._transactions[client]
-        return results
 
     # Blocking Methods
     def _add_blocker(self, response: BlockingResponse, client: socket.socket) -> None:
