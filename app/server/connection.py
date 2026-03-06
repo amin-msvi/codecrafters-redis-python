@@ -10,7 +10,7 @@ logger = get_logger(__name__)
 
 class MasterConnection:
     def __init__(self, master_info: MasterInfo, config: ServerConfig):
-        self._buffer = RESPBuffer()
+        self._buffer = RESPBuffer(config)
         self._master_info = master_info
         self._config = config
 

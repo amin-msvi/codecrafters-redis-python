@@ -1,11 +1,13 @@
 import socket
 
+from app.config import ServerConfig
 from app.resp_parser import parse_request, parse_resp
 from app.types import RESPProtocolError, RESPValue
 
 
 class RESPBuffer:
-    def __init__(self, buffer: bytes = b""):
+    def __init__(self, server_config: ServerConfig, buffer: bytes = b""):
+        self._server_config = server_config
         self._buffer = buffer
 
     def append(self, data: bytes):
@@ -26,7 +28,7 @@ class RESPBuffer:
         return string_data
 
     def recv(self, sock) -> None:
-        data = sock.recv(1024)
+        data = sock.recv(self._server_config.recv_buffer_size)
         if data == b"":
             return
         self.append(data)

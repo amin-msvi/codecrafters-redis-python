@@ -51,7 +51,7 @@ class RedisServer:
         while True:
             all_sockets = [self._server_socket] + self._connections
             all_sockets += self._role.get_extra_sockets()
-            ready, _, _ = select.select(all_sockets, [], [], 0.1)
+            ready, _, _ = select.select(all_sockets, [], [], self._config.select_timeout)
 
             for sock in ready:
                 assert sock is not None

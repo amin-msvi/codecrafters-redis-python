@@ -6,7 +6,7 @@ class ServerConfig:
     port: int
     host: str = "localhost"
     recv_buffer_size: int = 1024
-    socket_backlog: int = 5
+    select_timeout: float = 0.1
 
 
 @dataclass(frozen=True)

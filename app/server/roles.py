@@ -2,6 +2,7 @@ from datetime import datetime
 import socket
 from app.commands.base import CommandFlags, CommandResult, WaitBlocker
 from app.commands.registry import CommandRegistry
+from app.config import ServerConfig
 from app.logger import get_logger
 from app.resp_encoder import encode_resp
 from app.server.base_role import ServerRole
@@ -17,12 +18,14 @@ class ReplicaRole(ServerRole):
         master_socket: socket.socket,
         server_info: ServerInfo,
         registry: CommandRegistry,
+        config: ServerConfig,
         buffer: bytes,
     ):
         self._master_socket: socket.socket | None = master_socket
         self._server_info = server_info
         self._registry = registry
-        self._buffer: RESPBuffer = RESPBuffer(buffer)
+        self._config = config
+        self._buffer: RESPBuffer = RESPBuffer(config, buffer)
 
     def on_startup(self) -> None:
         assert self._master_socket is not None
@@ -33,7 +36,7 @@ class ReplicaRole(ServerRole):
         if self._master_socket is None:
             return
         try:
-            data = self._master_socket.recv(1024)
+            data = self._master_socket.recv(self._config.recv_buffer_size)
         except BlockingIOError:
             return
 
@@ -67,11 +70,12 @@ class ReplicaRole(ServerRole):
 
 
 class MasterRole(ServerRole):
-    def __init__(self, server_info: ServerInfo, registry: CommandRegistry):
+    def __init__(self, server_info: ServerInfo, registry: CommandRegistry, config: ServerConfig):
         self._registry = registry
         self._server_info = server_info
+        self._config = config
         self._replicas: list[socket.socket] = []
-        self._buffer: RESPBuffer = RESPBuffer()
+        self._buffer: RESPBuffer = RESPBuffer(config)
         self._wait_waiter: WaitBlocker | None = None
 
     def after_command(self, data: bytes, flags: CommandFlags | None) -> None:
@@ -121,7 +125,7 @@ class MasterRole(ServerRole):
 
     def handle_socket(self, sock: socket.socket) -> None:
         try:
-            data = sock.recv(1024)
+            data = sock.recv(self._config.recv_buffer_size)
         except BlockingIOError:
             return
 
