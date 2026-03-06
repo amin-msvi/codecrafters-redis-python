@@ -98,6 +98,7 @@ class RedisServer:
     ) -> SendResponse | TransferToRole | ParkClient:
         """Execute, and encode a request."""
         try:
+            # Transactions
             transaction_result = self._transaction_state.intercept(
                 client, parsed_data, cmd_name
             )
@@ -107,28 +108,29 @@ class RedisServer:
                         self._try_unblock(key)
                     return SendResponse(response=encode_resp(transaction_result.result))
                 return SendResponse(response=encode_resp(transaction_result))
-
+            
+            # Execution
             result = self._registry.execute(parsed_data)
 
-            if isinstance(result, CommandResult):
-                if result.event:
-                    self._try_unblock(result.event.key)
-                return SendResponse(response=encode_resp(result.response))
-
-            if isinstance(result, BlockingResponse):
-                self._add_blocker(result, client)
-                return ParkClient()
-
-            if isinstance(result, RDBSync):
-                return TransferToRole(
-                    header=encode_resp(result.response), rdb=encode_resp(result.rdb)
-                )
-
-            if isinstance(result, WaitBlocker):
-                self._role.on_wait(result, client)
-                return ParkClient()
-
-            return SendResponse(response=encode_resp(result))
+            match result:
+                case CommandResult(response, event):
+                    if event:
+                        self._try_unblock(event.key)
+                    return SendResponse(response=encode_resp(response))
+                case BlockingResponse():
+                    self._add_blocker(result, client)
+                    return ParkClient()
+                case RDBSync(response, rdb):
+                    return TransferToRole(
+                        header=encode_resp(response), rdb=encode_resp(rdb)
+                    )
+                case WaitBlocker():
+                    self._role.on_wait(result, client)
+                    return ParkClient()
+                case RESPError():
+                    return SendResponse(response=encode_resp(result))
+                case _:
+                    raise ValueError(f"Unexpected result type: {type(result)}")
 
         except RESPProtocolError as e:
             logger.warning("Protocol error: %s", e)
