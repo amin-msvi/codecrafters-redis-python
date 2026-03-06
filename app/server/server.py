@@ -77,7 +77,7 @@ class RedisServer:
         for parsed_data, cmd_name, consumed in parsed_requests:
             action = self._process_request(parsed_data, cmd_name, client)
             cmd_flag = self._registry.get_flags(cmd_name)
-            
+
             match action:
                 case TransferToRole(header, rdb):
                     client.sendall(header)
@@ -98,7 +98,9 @@ class RedisServer:
     ) -> SendResponse | TransferToRole | ParkClient:
         """Execute, and encode a request."""
         try:
-            transaction_result = self._transaction_state.intercept(client, parsed_data, cmd_name)
+            transaction_result = self._transaction_state.intercept(
+                client, parsed_data, cmd_name
+            )
             if transaction_result is not None:
                 if isinstance(transaction_result, ExecResult):
                     for key in transaction_result.events:
@@ -118,7 +120,9 @@ class RedisServer:
                 return ParkClient()
 
             if isinstance(result, RDBSync):
-                return TransferToRole(header=encode_resp(result.response), rdb=encode_resp(result.rdb))
+                return TransferToRole(
+                    header=encode_resp(result.response), rdb=encode_resp(result.rdb)
+                )
 
             if isinstance(result, WaitBlocker):
                 self._role.on_wait(result, client)

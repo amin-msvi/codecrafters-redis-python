@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass, field
 import socket
 
@@ -17,20 +16,22 @@ class TransactionState:
     def __init__(self, registry: CommandRegistry):
         self._transactions: dict[socket.socket, list[RESPValue]] = {}
         self._registry = registry
-    
+
     def start(self, client: socket.socket):
         self._transactions[client] = []
-    
+
     def queue(self, client: socket.socket, parsed_data: list[str]):
         self._transactions[client].append(parsed_data)
 
     def discard(self, client):
         del self._transactions[client]
-    
+
     def is_in_transaction(self, client: socket.socket) -> bool:
         return client in self._transactions
-    
-    def intercept(self, client, parsed_data, cmd_name) -> ExecResult | SimpleString | RESPError | None:
+
+    def intercept(
+        self, client, parsed_data, cmd_name
+    ) -> ExecResult | SimpleString | RESPError | None:
         if cmd_name == "MULTI":
             self.start(client)
             return SimpleString("OK")
@@ -48,14 +49,14 @@ class TransactionState:
         if self.is_in_transaction(client):
             self.queue(client, parsed_data)
             return SimpleString("QUEUED")
-        
+
         return
 
     def _execute(self, client) -> ExecResult:
         commands_input = self._transactions.get(client)
         results = []
         events = []
-        
+
         if commands_input is None:
             return ExecResult(result=RESPError("EXEC without MULTI"))
         if commands_input == []:
