@@ -1,6 +1,6 @@
 from argparse import ArgumentParser, Namespace
 from app.commands.registry import CommandRegistry
-from app.config import ServerConfig
+from app.config import TCPServerConfig
 
 from app.data.db import DataBase
 from app.logger import setup_logging
@@ -36,7 +36,7 @@ def main():
 
     # Configurations
     args = parse_cli_args()
-    config = ServerConfig(port=args.port)
+    config = TCPServerConfig(port=args.port)
 
     # Dependencies
     server_info = get_server_info(args)

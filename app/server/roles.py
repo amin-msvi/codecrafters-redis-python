@@ -2,7 +2,7 @@ from datetime import datetime
 import socket
 from app.commands.base import CommandFlags, CommandResult, WaitBlocker
 from app.commands.registry import CommandRegistry
-from app.config import ServerConfig
+from app.config import TCPServerConfig
 from app.logger import get_logger
 from app.resp_encoder import encode_resp
 from app.server.base_role import ServerRole
@@ -18,7 +18,7 @@ class ReplicaRole(ServerRole):
         master_socket: socket.socket,
         server_info: ServerInfo,
         registry: CommandRegistry,
-        config: ServerConfig,
+        config: TCPServerConfig,
         buffer: bytes,
     ):
         self._master_socket: socket.socket | None = master_socket
@@ -70,7 +70,7 @@ class ReplicaRole(ServerRole):
 
 
 class MasterRole(ServerRole):
-    def __init__(self, server_info: ServerInfo, registry: CommandRegistry, config: ServerConfig):
+    def __init__(self, server_info: ServerInfo, registry: CommandRegistry, config: TCPServerConfig):
         self._registry = registry
         self._server_info = server_info
         self._config = config

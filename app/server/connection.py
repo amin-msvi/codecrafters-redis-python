@@ -1,6 +1,6 @@
 from app.logger import get_logger
 import socket
-from app.config import ServerConfig
+from app.config import TCPServerConfig
 from app.resp_encoder import encode_resp
 from app.server.buffer import RESPBuffer
 from app.server.server_info import MasterInfo
@@ -9,7 +9,7 @@ logger = get_logger(__name__)
 
 
 class MasterConnection:
-    def __init__(self, master_info: MasterInfo, config: ServerConfig):
+    def __init__(self, master_info: MasterInfo, config: TCPServerConfig):
         self._buffer = RESPBuffer(config)
         self._master_info = master_info
         self._config = config

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class ServerConfig:
+class TCPServerConfig:
     port: int
     host: str = "localhost"
     recv_buffer_size: int = 1024

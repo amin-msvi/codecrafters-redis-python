@@ -1,12 +1,12 @@
 import socket
 
-from app.config import ServerConfig
+from app.config import TCPServerConfig
 from app.resp_parser import parse_request, parse_resp
 from app.types import RESPProtocolError, RESPValue
 
 
 class RESPBuffer:
-    def __init__(self, server_config: ServerConfig, buffer: bytes = b""):
+    def __init__(self, server_config: TCPServerConfig, buffer: bytes = b""):
         self._server_config = server_config
         self._buffer = buffer
 

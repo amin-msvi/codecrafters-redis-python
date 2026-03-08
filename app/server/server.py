@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from app.blocking import BlockingState, WaitingClient
 from app.commands.base import BlockingResponse, CommandResult, RDBSync, WaitBlocker
 from app.commands.registry import CommandRegistry
-from app.config import ServerConfig
+from app.config import TCPServerConfig
 from app.logger import get_logger
 from app.resp_encoder import encode_resp
 from app.resp_parser import parse_request
@@ -23,7 +23,7 @@ class RedisServer:
         self,
         role: ServerRole,
         registry: CommandRegistry,
-        config: ServerConfig,
+        config: TCPServerConfig,
         server_info: ServerInfo,
     ):
         self._role = role
