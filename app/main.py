@@ -1,6 +1,6 @@
 from argparse import ArgumentParser, Namespace
 from app.commands.registry import CommandRegistry
-from app.config import TCPServerConfig
+from app.config import ServerConfig, TCPServerConfig
 
 from app.data.db import DataBase
 from app.logger import setup_logging
@@ -23,6 +23,12 @@ def parse_cli_args() -> Namespace:
     parser.add_argument(
         "--replicaof", type=str, default=None, help="'<host> <port>' of master"
     )
+    parser.add_argument(
+        "--dir", type=str, default=None, help="rdb directory"
+    )
+    parser.add_argument(
+       "--dbfilename", type=str, default=None, help="rdb filename"
+    )
     return parser.parse_args()
 
 
@@ -30,6 +36,15 @@ def get_server_info(args: Namespace) -> ServerInfo:
     replication = Replication(role="slave" if args.replicaof is not None else "master")
     return ServerInfo(replication=replication)
 
+
+def get_server_config(args: Namespace) -> ServerConfig:
+    server_config = ServerConfig()
+    if args.dir:
+        server_config.dir = args.dir
+    if args.dbfilename:
+        server_config.dbfilename = args.dbfilename
+    return server_config
+            
 
 def main():
     setup_logging()
@@ -40,11 +55,13 @@ def main():
 
     # Dependencies
     server_info = get_server_info(args)
-    registry = CommandRegistry()
+    server_config = get_server_config(args)
     dependencies = {
-        ServerInfo: server_info,
         DataBase: DataBase(),
+        ServerInfo: server_info,
+        ServerConfig: server_config
     }
+    registry = CommandRegistry()
     registry.auto_discover(dependencies)
 
     # Role assignment

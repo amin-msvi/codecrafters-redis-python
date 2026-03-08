@@ -9,6 +9,12 @@ class TCPServerConfig:
     select_timeout: float = 0.1
 
 
+@dataclass
+class ServerConfig:
+    dir: str = "./rdb/redis-files"
+    dbfilename: str = "db.rdb"
+
+
 @dataclass(frozen=True)
 class RespParserConfig:
     max_array_depth: int = 10
