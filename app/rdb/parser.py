@@ -75,14 +75,14 @@ class RDBParser:
         str, RDBEntry
     ]:  # Remove None whenever the other types of dtypes are implemented.
         # If there's the optional expiry
-        expiry: int | None = None
+        expiry: datetime | None = None
         if self._peek()[0] == 0xFC:
             self._consume_byte()  # Consuming 0xFC
-            expiry = int.from_bytes(self._consume(8), "little")
+            expiry = datetime.fromtimestamp(int.from_bytes(self._consume(8), "little"))
         elif self._peek()[0] == 0xFD:
             self._consume_byte()  # Consuming 0xFD
             expiry_s = int.from_bytes(self._consume(4), "little")
-            expiry = expiry_s * 1000
+            expiry = datetime.fromtimestamp(expiry_s * 1000)
 
         value_byte_type = self._consume_byte()
         if value_byte_type == 0:  # string type (for now we only support this)

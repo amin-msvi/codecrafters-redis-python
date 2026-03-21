@@ -1,5 +1,4 @@
 from os import path
-from datetime import datetime
 from app.config import ServerConfig
 from app.data.db import DataBase, RedisValue
 from app.rdb.parser import RDBParser
@@ -29,26 +28,17 @@ class RDBLoader:
             rdb_parser = RDBParser(self.binary_rdb)
             return rdb_parser.parse()
     
-    def _populate(self, parsed: ParsedRDB | None, database: DataBase) -> None:
-        store: dict[str, RedisValue] = {}
-        
+    def _populate(self, parsed: ParsedRDB | None, database: DataBase) -> None:        
         if parsed is None:
-            database.store = store
             return
         
         for key, rdb_entry in parsed.data.items():
-            expiry = None
-            if rdb_entry.expiry:
-                expiry = datetime.fromtimestamp(rdb_entry.expiry / 1000)
-                if datetime.now() > expiry:
-                    continue
-            
-            store[key] = RedisValue(
+            database.set(key, RedisValue(
                 data=rdb_entry.value,
                 dtype=rdb_entry.dtype,
-                expiry=expiry,
+                expiry=rdb_entry.expiry,
+                )
             )
-        database.store = store
         return
 
     
