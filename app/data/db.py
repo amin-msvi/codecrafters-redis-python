@@ -11,8 +11,11 @@ class RedisValue:
 
 
 class DataBase:
-    def __init__(self):
-        self.store: dict[str, RedisValue] = {}
+    def __init__(self, store: dict[str, RedisValue] | None = None):
+        if store is None:
+            self.store = {}
+        else:
+            self.store = store
 
     def get(self, key: str) -> RedisValue | None:
         val = self.store.get(key)
@@ -20,6 +23,22 @@ class DataBase:
             self.delete(key)
             return None
         return val
+    
+    def get_keys(self, key_pattern: str) -> list[str] | None:
+        if key_pattern == "*":
+            keys = []
+            for key in list(self.store.keys()):
+                if self.get(key) is not None: # If the key doesn't exist or expired, it'll ignore it.
+                    keys.append(key)
+            return keys
+
+        if "*" in key_pattern:  # For now, we can assume "*" is always at the end for simplicity
+            keys = []
+            for key in list(self.store.keys()):
+                if self.get(key) is not None:
+                    if key.startswith(key_pattern[:-1]):
+                        keys.append(key)
+            return keys
 
     def set(self, key: str, value: RedisValue) -> None:
         self.store[key] = value

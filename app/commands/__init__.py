@@ -18,6 +18,7 @@ from app.commands.replconf import ReplConfCommand
 from app.commands.psync import PSyncCommand
 from app.commands.wait import WaitCommand
 from app.commands.config import ConfigCommand
+from app.commands.keys import KeysCommand
 
 from app.commands.registry import CommandRegistry
 
