@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from enum import IntEnum
 
 
@@ -6,7 +7,7 @@ from enum import IntEnum
 class RDBEntry:
     value: str
     dtype: str
-    expiry: int | None
+    expiry: datetime | None
 
 
 @dataclass

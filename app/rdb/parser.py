@@ -1,3 +1,4 @@
+from datetime import datetime
 from app.rdb.types import ParsedRDB, RDBEntry, RDBProtocolError, RDBOp
 
 
@@ -62,7 +63,7 @@ class RDBParser:
             raise RDBProtocolError("No marker")
         total_keys = self._read_size_encoding()
         self._read_size_encoding()  # expiry_keys count is here. Not needed for now. Consumed it
-        assert isinstance(total_keys, int)
+
         for _ in range(total_keys):
             key, entry = self._parse_key_value()
             entries[key] = entry
@@ -75,12 +76,12 @@ class RDBParser:
         # If there's the optional expiry
         expiry: datetime | None = None
         if self._peek()[0] == RDBOp.OP_EXPIRY_TIMESTAMP_SEC:
-            self._consume_byte()  # Consuming 0xFC
+            self._consume_byte()  # Consuming expiry timestamp
             expiry = datetime.fromtimestamp(int.from_bytes(self._consume(RDBOp.SEC_BYTES), "little"))
         elif self._peek()[0] == RDBOp.OP_EXPIRY_TIMESTAMP_MILLSEC:
-            self._consume_byte()  # Consuming 0xFD
+            self._consume_byte()  # Consuming expiry timestamp
             expiry_s = int.from_bytes(self._consume(RDBOp.MILL_SEC_BYTES), "little")
-            expiry = datetime.fromtimestamp(expiry_s * 1000)
+            expiry = datetime.fromtimestamp(expiry_s / 1000)
 
         value_byte_type = self._consume_byte()
         if value_byte_type == 0:  # string type (for now we only support this)
