@@ -4,6 +4,7 @@ from app.config import ServerConfig, TCPServerConfig
 
 from app.data.db import DataBase
 from app.logger import setup_logging
+from app.rdb.loader import RDBLoader
 from app.server import (
     MasterRole,
     MasterInfo,
@@ -56,8 +57,12 @@ def main():
     # Dependencies
     server_info = get_server_info(args)
     server_config = get_server_config(args)
+    database = DataBase()
+    rdb_loader = RDBLoader(server_config)
+    rdb_loader.load_into(database)
+    
     dependencies = {
-        DataBase: DataBase(),
+        DataBase: database,
         ServerInfo: server_info,
         ServerConfig: server_config
     }
