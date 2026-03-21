@@ -125,6 +125,7 @@ class RDBParser:
                 raise RDBProtocolError("wrong special encoded string format")
         else:
             size = self._read_size_encoding()  # How many bytes follow?
+            assert isinstance(size, int)
             raw = self._consume(size)  # reading those bytes
             return raw.decode("utf-8")  # Convert to string
 
