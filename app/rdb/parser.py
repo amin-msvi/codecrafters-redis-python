@@ -14,7 +14,7 @@ class RDBParser:
 
         while True:
             byte = self._consume_byte()
-            
+
             if byte == 0xFA:
                 self._parse_metadata()
             elif byte == 0xFE:
@@ -23,19 +23,19 @@ class RDBParser:
                 break
             else:
                 raise RDBProtocolError("RDB protocol error")
-        
+
         return ParsedRDB(
             version=self.version,
             metadata=self.metadata,
             data=self.entries,
         )
-    
+
     # Private methods
     def _parse_header(self) -> str:
         chunk = self._consume(9)
         if chunk[:5] != b"REDIS":
             raise RDBProtocolError("Invalid RDB protocol")
-        return chunk[5:].decode('utf-8')
+        return chunk[5:].decode("utf-8")
 
     def _parse_metadata(self):
         """
@@ -56,7 +56,9 @@ class RDBParser:
         02          ← keys with expiry (size encoded)
         [key-value pairs...]
         """
-        _ = self._read_size_encoding()  # intdex: We don't need the `index` for this stage, so I'll leave it here
+        _ = (
+            self._read_size_encoding()
+        )  # intdex: We don't need the `index` for this stage, so I'll leave it here
         marker = self._consume_byte()
         if marker != 0xFB:
             raise RDBProtocolError("No marker")
@@ -66,42 +68,45 @@ class RDBParser:
         for _ in range(total_keys):
             key, entry = self._parse_key_value()
             self.entries[key] = entry
-        
-        
-        
-    
-    def _parse_key_value(self) -> tuple[str, RDBEntry]:  # Remove None whenever the other types of dtypes are implemented.
+
+    def _parse_key_value(
+        self,
+    ) -> tuple[
+        str, RDBEntry
+    ]:  # Remove None whenever the other types of dtypes are implemented.
         # If there's the optional expiry
         expiry: int | None = None
         if self._peek()[0] == 0xFC:
             self._consume_byte()  # Consuming 0xFC
-            expiry = int.from_bytes(self._consume(8), 'little')
+            expiry = int.from_bytes(self._consume(8), "little")
         elif self._peek()[0] == 0xFD:
             self._consume_byte()  # Consuming 0xFD
-            expiry_s = int.from_bytes(self._consume(4), 'little')
+            expiry_s = int.from_bytes(self._consume(4), "little")
             expiry = expiry_s * 1000
-        
+
         value_byte_type = self._consume_byte()
-        if value_byte_type == 0: # string type (for now we only support this)
+        if value_byte_type == 0:  # string type (for now we only support this)
             key = self._read_string()
             value = self._read_string()
             return key, RDBEntry(value=value, dtype="string", expiry=expiry)
         else:
-            return "not-implemented-yet", RDBEntry(value="value", dtype="something else", expiry=expiry)
-    
+            return "not-implemented-yet", RDBEntry(
+                value="value", dtype="something else", expiry=expiry
+            )
+
     def _consume(self, n: int) -> bytes:
         chunk = self._peek(n)
         self.cursor += n
         return chunk
-    
+
     def _consume_byte(self) -> int:
         byte = self.data[self.cursor]
         self.cursor += 1
         return byte
-    
+
     def _peek(self, n=1) -> bytes:
-        return self.data[self.cursor:self.cursor + n]
-    
+        return self.data[self.cursor : self.cursor + n]
+
     def _read_string(self) -> str:
         first_byte = self._peek()[0]
         if (first_byte >> 6) == 0b11:  # SpecialStringEncoded cases
@@ -112,18 +117,17 @@ class RDBParser:
                 return str(b)
             elif bottom_6_bits == 0x01:  # 0b000001
                 b = self._consume(2)  # int16 little-endian -> str(value)
-                return str(int.from_bytes(b, 'little'))
+                return str(int.from_bytes(b, "little"))
             elif bottom_6_bits == 0x02:  # 0b000010
                 b = self._consume(4)  # int32 little-endian -> str(value)
-                return str(int.from_bytes(b, 'little'))
+                return str(int.from_bytes(b, "little"))
             else:
                 raise RDBProtocolError("wrong special encoded string format")
         else:
             size = self._read_size_encoding()  # How many bytes follow?
             raw = self._consume(size)  # reading those bytes
-            return raw.decode('utf-8')  # Convert to string
-            
-    
+            return raw.decode("utf-8")  # Convert to string
+
     def _read_size_encoding(self) -> int | SpecialStringEncoded:
         first_byte = self._consume_byte()
         flag = (first_byte & 0b11000000) >> 6
@@ -131,7 +135,9 @@ class RDBParser:
         if flag == 0b00:  # short length -> bottom 6 bits
             return first_byte & 0b00111111
 
-        elif flag == 0b01:  # medium length -> bottom 6 bits + next byte (6+8=14 bits, big endian)
+        elif (
+            flag == 0b01
+        ):  # medium length -> bottom 6 bits + next byte (6+8=14 bits, big endian)
             bottom_bits = first_byte & 0b00111111  # High part
             next_byte = self._consume_byte()  # Low part
             return (bottom_bits << 8) | next_byte
