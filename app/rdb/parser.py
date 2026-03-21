@@ -3,6 +3,15 @@ from app.rdb.types import ParsedRDB, RDBEntry, RDBProtocolError, RDBOp
 
 
 class RDBParser:
+    """Stateful binary parser that walks raw RDB bytes and produces a ParsedRDB.
+
+    - Uses a cursor-based approach: _consume and _peek methods
+    advance through the byte stream.
+    - Higher-level methods (_parse_header, _parse_database, etc.)
+    handle each RDB section. 
+    * Only string value types are currently supported.
+    """
+
     def __init__(self, data: bytes):
         self.data: bytes = data
         self.cursor: int = 0
@@ -41,7 +50,7 @@ class RDBParser:
         """
         FA                              ← already consumed by parse() loop
         09 72 65 64 69 73 2D 76 65 72   ← name  (string encoded): "redis-ver"
-        06 36 2E 30 2E 31 36            ← value (string encoded): "6.0.16"
+        06 36 2E 30 2E 31 36            ← value (string encoded): "1.1.1"
         """
         name = self._read_string()
         value = self._read_string()
@@ -103,6 +112,8 @@ class RDBParser:
         return self.data[self.cursor : self.cursor + n]
 
     def _read_string(self) -> str:
+        """Read an RDB string: either a length-prefixed UTF-8 string,
+        or a special-encoded integer stored as its string representation."""
         first_byte = self._peek()[0]
         if (first_byte >> 6) == 0b11:  # Special String Encoding
             byte = self._consume_byte()
@@ -124,6 +135,12 @@ class RDBParser:
             return raw.decode("utf-8")  # Convert to string
 
     def _read_size_encoding(self) -> int:
+        """
+        Decode a size-encoded integer (1, 2, or 5 bytes 
+        depending on the top 2 bits). 
+        The 0b11 case (special string encoding) is handled
+        by _read_string before this is called.
+        """
         first_byte = self._consume_byte()
         flag = (first_byte & 0b11000000) >> 6
 
