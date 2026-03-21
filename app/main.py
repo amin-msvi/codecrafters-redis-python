@@ -24,12 +24,8 @@ def parse_cli_args() -> Namespace:
     parser.add_argument(
         "--replicaof", type=str, default=None, help="'<host> <port>' of master"
     )
-    parser.add_argument(
-        "--dir", type=str, default=None, help="rdb directory"
-    )
-    parser.add_argument(
-       "--dbfilename", type=str, default=None, help="rdb filename"
-    )
+    parser.add_argument("--dir", type=str, default=None, help="rdb directory")
+    parser.add_argument("--dbfilename", type=str, default=None, help="rdb filename")
     return parser.parse_args()
 
 
@@ -45,7 +41,7 @@ def get_server_config(args: Namespace) -> ServerConfig:
     if args.dbfilename:
         server_config.dbfilename = args.dbfilename
     return server_config
-            
+
 
 def main():
     setup_logging()
@@ -60,11 +56,11 @@ def main():
     database = DataBase()
     rdb_loader = RDBLoader(server_config)
     rdb_loader.load_into(database)
-    
+
     dependencies = {
         DataBase: database,
         ServerInfo: server_info,
-        ServerConfig: server_config
+        ServerConfig: server_config,
     }
     registry = CommandRegistry()
     registry.auto_discover(dependencies)

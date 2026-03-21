@@ -30,9 +30,7 @@ class RDBOp(IntEnum):
     OP_EXPIRY_TIMESTAMP_SEC = 0xFD
     OP_EXPIRY_TIMESTAMP_MILLSEC = 0xFC
     OP_END_OF_RDB = 0xFF
-    
+
     # Special values
     SEC_BYTES = 4
     MILL_SEC_BYTES = 8
-    
-    

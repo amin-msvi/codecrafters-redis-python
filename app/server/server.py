@@ -51,7 +51,9 @@ class RedisServer:
         while True:
             all_sockets = [self._server_socket] + self._connections
             all_sockets += self._role.get_extra_sockets()
-            ready, _, _ = select.select(all_sockets, [], [], self._config.select_timeout)
+            ready, _, _ = select.select(
+                all_sockets, [], [], self._config.select_timeout
+            )
 
             for sock in ready:
                 assert sock is not None
@@ -108,7 +110,7 @@ class RedisServer:
                         self._try_unblock(key)
                     return SendResponse(response=encode_resp(transaction_result.result))
                 return SendResponse(response=encode_resp(transaction_result))
-            
+
             # Execution
             result = self._registry.execute(parsed_data)
 

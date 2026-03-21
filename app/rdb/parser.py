@@ -68,16 +68,14 @@ class RDBParser:
             key, entry = self._parse_key_value()
             entries[key] = entry
 
-    def _parse_key_value(
-        self,
-    ) -> tuple[
-        str, RDBEntry
-    ]:
+    def _parse_key_value(self) -> tuple[str, RDBEntry]:
         # If there's the optional expiry
         expiry: datetime | None = None
         if self._peek()[0] == RDBOp.OP_EXPIRY_TIMESTAMP_SEC:
             self._consume_byte()  # Consuming expiry timestamp
-            expiry = datetime.fromtimestamp(int.from_bytes(self._consume(RDBOp.SEC_BYTES), "little"))
+            expiry = datetime.fromtimestamp(
+                int.from_bytes(self._consume(RDBOp.SEC_BYTES), "little")
+            )
         elif self._peek()[0] == RDBOp.OP_EXPIRY_TIMESTAMP_MILLSEC:
             self._consume_byte()  # Consuming expiry timestamp
             expiry_s = int.from_bytes(self._consume(RDBOp.MILL_SEC_BYTES), "little")

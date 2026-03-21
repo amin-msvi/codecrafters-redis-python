@@ -70,7 +70,12 @@ class ReplicaRole(ServerRole):
 
 
 class MasterRole(ServerRole):
-    def __init__(self, server_info: ServerInfo, registry: CommandRegistry, config: TCPServerConfig):
+    def __init__(
+        self,
+        server_info: ServerInfo,
+        registry: CommandRegistry,
+        config: TCPServerConfig,
+    ):
         self._registry = registry
         self._server_info = server_info
         self._config = config

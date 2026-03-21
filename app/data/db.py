@@ -23,16 +23,17 @@ class DataBase:
             self.delete(key)
             return None
         return val
-    
+
     def get_keys(self, key_pattern: str) -> list[str] | None:
         if key_pattern == "*":
             keys = []
             for key in list(self.store.keys()):
-                if self.get(key) is not None: # If the key doesn't exist or expired, it'll ignore it.
+                if self.get(key) is not None:
                     keys.append(key)
             return keys
 
-        if "*" in key_pattern:  # For now, we can assume "*" is always at the end for simplicity
+        # I'll assume "*" is always at the end for simplicity, for now
+        if "*" in key_pattern:
             keys = []
             for key in list(self.store.keys()):
                 if self.get(key) is not None:

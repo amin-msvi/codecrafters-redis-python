@@ -9,7 +9,7 @@ class RDBLoader:
     def __init__(self, server_config: ServerConfig):
         self.binary_rdb: bytes | None = None
         self.server_config = server_config
-    
+
     def load_into(self, database: DataBase) -> None:
         self.binary_rdb = self._load()
         parsed_rdb = self._parse()
@@ -21,24 +21,24 @@ class RDBLoader:
             return None
 
         with open(rdb_path, "rb") as f:
-             return f.read()
-    
+            return f.read()
+
     def _parse(self) -> ParsedRDB | None:
         if self.binary_rdb:
             rdb_parser = RDBParser(self.binary_rdb)
             return rdb_parser.parse()
-    
-    def _populate(self, parsed: ParsedRDB | None, database: DataBase) -> None:        
+
+    def _populate(self, parsed: ParsedRDB | None, database: DataBase) -> None:
         if parsed is None:
             return
-        
+
         for key, rdb_entry in parsed.data.items():
-            database.set(key, RedisValue(
-                data=rdb_entry.value,
-                dtype=rdb_entry.dtype,
-                expiry=rdb_entry.expiry,
-                )
+            database.set(
+                key,
+                RedisValue(
+                    data=rdb_entry.value,
+                    dtype=rdb_entry.dtype,
+                    expiry=rdb_entry.expiry,
+                ),
             )
         return
-
-    
