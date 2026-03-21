@@ -89,9 +89,7 @@ class RDBParser:
             value = self._read_string()
             return key, RDBEntry(value=value, dtype="string", expiry=expiry)
         else:
-            return "not-implemented-yet", RDBEntry(
-                value="value", dtype="something else", expiry=expiry
-            )
+            raise NotImplementedError("Current parser only supports the string type")
 
     def _consume(self, n: int) -> bytes:
         chunk = self._peek(n)
@@ -108,27 +106,26 @@ class RDBParser:
 
     def _read_string(self) -> str:
         first_byte = self._peek()[0]
-        if (first_byte >> 6) == 0b11:  # SpecialStringEncoded cases
+        if (first_byte >> 6) == 0b11:  # Special String Encoding
             byte = self._consume_byte()
             bottom_6_bits = byte & 0b00111111
-            if bottom_6_bits == 0x00:  # 0b000000
-                b = self._consume_byte()  # int8 -> str(value)
+            if bottom_6_bits == 0x00:
+                b = self._consume_byte()  # int8
                 return str(b)
-            elif bottom_6_bits == 0x01:  # 0b000001
-                b = self._consume(2)  # int16 little-endian -> str(value)
+            elif bottom_6_bits == 0x01:
+                b = self._consume(2)  # int16 little-endian
                 return str(int.from_bytes(b, "little"))
-            elif bottom_6_bits == 0x02:  # 0b000010
-                b = self._consume(4)  # int32 little-endian -> str(value)
+            elif bottom_6_bits == 0x02:
+                b = self._consume(4)  # int32 little-endian
                 return str(int.from_bytes(b, "little"))
             else:
                 raise RDBProtocolError("wrong special encoded string format")
         else:
             size = self._read_size_encoding()  # How many bytes follow?
-            assert isinstance(size, int)
             raw = self._consume(size)  # reading those bytes
             return raw.decode("utf-8")  # Convert to string
 
-    def _read_size_encoding(self) -> int | SpecialStringEncoded:
+    def _read_size_encoding(self) -> int:
         first_byte = self._consume_byte()
         flag = (first_byte & 0b11000000) >> 6
 
@@ -149,10 +146,6 @@ class RDBParser:
                 merged = (merged << 8) | b
             return merged
 
-        elif flag == 0b11:  # special integer encoding
-            # This is a 'special string encoding' (integer encoded as string).
-            # Sending back signal to the caller -> This is special case
-            return SpecialStringEncoded()
-
+        # elif flag == 0b11:  # special integer encoding is handled in _read_string
         else:
             raise RDBProtocolError("Invalid size encoding protcol")
