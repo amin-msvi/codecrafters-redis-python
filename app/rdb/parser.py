@@ -5,29 +5,28 @@ class RDBParser:
     def __init__(self, data: bytes):
         self.data: bytes = data
         self.cursor: int = 0
-        self.version: str = ""
-        self.metadata: dict[str, str] = {}
-        self.entries: dict = {}
 
     def parse(self) -> ParsedRDB:
-        self.version = self._parse_header()
+        version: str = self._parse_header()
+        metadata: dict[str, str] = {}
+        entries: dict[str, RDBEntry] = {}
 
         while True:
             byte = self._consume_byte()
 
             if byte == 0xFA:
-                self._parse_metadata()
+                self._parse_metadata(metadata)
             elif byte == 0xFE:
-                self._parse_database()
+                self._parse_database(entries)
             elif byte == 0xFF:
                 break
             else:
                 raise RDBProtocolError("RDB protocol error")
 
         return ParsedRDB(
-            version=self.version,
-            metadata=self.metadata,
-            data=self.entries,
+            version=version,
+            metadata=metadata,
+            data=entries,
         )
 
     # Private methods
@@ -37,7 +36,7 @@ class RDBParser:
             raise RDBProtocolError("Invalid RDB protocol")
         return chunk[5:].decode("utf-8")
 
-    def _parse_metadata(self):
+    def _parse_metadata(self, metadata: dict[str, str]):
         """
         FA                              ← already consumed by parse() loop
         09 72 65 64 69 73 2D 76 65 72   ← name  (string encoded): "redis-ver"
@@ -45,9 +44,9 @@ class RDBParser:
         """
         name = self._read_string()
         value = self._read_string()
-        self.metadata.update({name: value})
+        metadata.update({name: value})
 
-    def _parse_database(self):
+    def _parse_database(self, entries: dict[str, RDBEntry]):
         """
         FE          ← already consumed by parse() loop
         00          ← database index (size encoded)
@@ -56,9 +55,8 @@ class RDBParser:
         02          ← keys with expiry (size encoded)
         [key-value pairs...]
         """
-        _ = (
-            self._read_size_encoding()
-        )  # intdex: We don't need the `index` for this stage, so I'll leave it here
+        # index: We don't need the `index` for this stage, so I'll leave it here
+        _ = self._read_size_encoding()
         marker = self._consume_byte()
         if marker != 0xFB:
             raise RDBProtocolError("No marker")
@@ -67,7 +65,7 @@ class RDBParser:
         assert isinstance(total_keys, int)
         for _ in range(total_keys):
             key, entry = self._parse_key_value()
-            self.entries[key] = entry
+            entries[key] = entry
 
     def _parse_key_value(
         self,
