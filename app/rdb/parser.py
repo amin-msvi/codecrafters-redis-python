@@ -1,4 +1,4 @@
-from app.rdb.types import ParsedRDB, RDBEntry, RDBProtocolError, SpecialStringEncoded
+from app.rdb.types import ParsedRDB, RDBEntry, RDBProtocolError, RDBOp
 
 
 class RDBParser:
@@ -14,11 +14,11 @@ class RDBParser:
         while True:
             byte = self._consume_byte()
 
-            if byte == 0xFA:
+            if byte == RDBOp.OP_METADATA:
                 self._parse_metadata(metadata)
-            elif byte == 0xFE:
+            elif byte == RDBOp.OP_DB:
                 self._parse_database(entries)
-            elif byte == 0xFF:
+            elif byte == RDBOp.OP_END_OF_RDB:
                 break
             else:
                 raise RDBProtocolError("RDB protocol error")
@@ -58,7 +58,7 @@ class RDBParser:
         # index: We don't need the `index` for this stage, so I'll leave it here
         _ = self._read_size_encoding()
         marker = self._consume_byte()
-        if marker != 0xFB:
+        if marker != RDBOp.OP_DB_MARKER:
             raise RDBProtocolError("No marker")
         total_keys = self._read_size_encoding()
         self._read_size_encoding()  # expiry_keys count is here. Not needed for now. Consumed it
@@ -71,15 +71,15 @@ class RDBParser:
         self,
     ) -> tuple[
         str, RDBEntry
-    ]:  # Remove None whenever the other types of dtypes are implemented.
+    ]:
         # If there's the optional expiry
         expiry: datetime | None = None
-        if self._peek()[0] == 0xFC:
+        if self._peek()[0] == RDBOp.OP_EXPIRY_TIMESTAMP_SEC:
             self._consume_byte()  # Consuming 0xFC
-            expiry = datetime.fromtimestamp(int.from_bytes(self._consume(8), "little"))
-        elif self._peek()[0] == 0xFD:
+            expiry = datetime.fromtimestamp(int.from_bytes(self._consume(RDBOp.SEC_BYTES), "little"))
+        elif self._peek()[0] == RDBOp.OP_EXPIRY_TIMESTAMP_MILLSEC:
             self._consume_byte()  # Consuming 0xFD
-            expiry_s = int.from_bytes(self._consume(4), "little")
+            expiry_s = int.from_bytes(self._consume(RDBOp.MILL_SEC_BYTES), "little")
             expiry = datetime.fromtimestamp(expiry_s * 1000)
 
         value_byte_type = self._consume_byte()
