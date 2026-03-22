@@ -24,9 +24,14 @@ class PubSubState:
         self._channels[channel].remove(client)
 
     def subscription_count(self, client: socket.socket) -> int:
+        """Returns the number of channels the client subscribed to (client_1 -> channel1, channel2 --> 2)"""
         return sum(
             1 for subscribers in self._channels.values() if client in subscribers
         )
+    
+    def publish_count(self, channel: str):
+        """Returns the number of client (subscribers) that channel has: channel1: client1 --> 1"""
+        return len(self._channels[channel])
 
     def intercept(
         self, client: socket.socket, parsed_data: list[str], cmd_name: str

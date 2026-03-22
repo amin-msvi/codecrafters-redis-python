@@ -6,6 +6,7 @@ from app.commands.base import (
     Command,
     CommandFlags,
     CommandResult,
+    PublishResult,
     RDBSync,
     SubscribeResult,
     WaitBlocker,
@@ -35,6 +36,7 @@ class CommandRegistry:
         | RDBSync
         | WaitBlocker
         | SubscribeResult
+        | PublishResult
         | RESPError
     ):
         """Main entry point - parse input, validate, and execute."""
