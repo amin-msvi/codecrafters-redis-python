@@ -20,6 +20,7 @@ class BlockingResponse:
 class SubscribeResult:
     channel: str
 
+
 @dataclass
 class UnblockEvent:
     key: str

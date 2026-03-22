@@ -29,7 +29,14 @@ class CommandRegistry:
 
     def execute(
         self, command_input: RESPValue
-    ) -> CommandResult | BlockingResponse | RDBSync | WaitBlocker | SubscribeResult | RESPError:
+    ) -> (
+        CommandResult
+        | BlockingResponse
+        | RDBSync
+        | WaitBlocker
+        | SubscribeResult
+        | RESPError
+    ):
         """Main entry point - parse input, validate, and execute."""
         if command_input is None:
             return RESPError("empty command")

@@ -3,7 +3,13 @@ import socket
 from datetime import datetime, timedelta
 
 from app.blocking import BlockingState, WaitingClient
-from app.commands.base import BlockingResponse, CommandResult, RDBSync, SubscribeResult, WaitBlocker
+from app.commands.base import (
+    BlockingResponse,
+    CommandResult,
+    RDBSync,
+    SubscribeResult,
+    WaitBlocker,
+)
 from app.commands.registry import CommandRegistry
 from app.config import TCPServerConfig
 from app.logger import get_logger
@@ -115,10 +121,8 @@ class RedisServer:
                 return SendResponse(response=encode_resp(transaction_result))
 
             # PubSub
-            pubsub_result = self._pubsub_state.intercept(
-                client, parsed_data, cmd_name
-            )
-            
+            pubsub_result = self._pubsub_state.intercept(client, parsed_data, cmd_name)
+
             if pubsub_result is not None:
                 return SendResponse(response=encode_resp(pubsub_result))
 

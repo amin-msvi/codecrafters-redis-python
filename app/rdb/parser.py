@@ -8,7 +8,7 @@ class RDBParser:
     - Uses a cursor-based approach: _consume and _peek methods
     advance through the byte stream.
     - Higher-level methods (_parse_header, _parse_database, etc.)
-    handle each RDB section. 
+    handle each RDB section.
     * Only string value types are currently supported.
     """
 
@@ -136,8 +136,8 @@ class RDBParser:
 
     def _read_size_encoding(self) -> int:
         """
-        Decode a size-encoded integer (1, 2, or 5 bytes 
-        depending on the top 2 bits). 
+        Decode a size-encoded integer (1, 2, or 5 bytes
+        depending on the top 2 bits).
         The 0b11 case (special string encoding) is handled
         by _read_string before this is called.
         """

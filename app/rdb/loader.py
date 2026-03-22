@@ -8,7 +8,7 @@ from app.rdb.types import ParsedRDB
 class RDBLoader:
     """Loads an RDB file from disk and populates a DataBase using its public API.
 
-    It has three phases: 
+    It has three phases:
     1. _load (read bytes)
     2. _parse (bytes → ParsedRDB)
     3. _populate (entries → DataBase).

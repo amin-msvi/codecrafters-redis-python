@@ -4,26 +4,39 @@ import socket
 from app.types import RESPError
 
 
-
 class PubSubState:
     def __init__(self):
-        self._channels: dict[str, set[socket.socket]] = defaultdict(set)  # channels -> sockets
-        self._allowed_commands = ["SUBSCRIBE", "UNSUBSCRIBE", "PSUBSCRIBE", "PING", "QUIT"]
-    
+        self._channels: dict[str, set[socket.socket]] = defaultdict(
+            set
+        )  # channels -> sockets
+        self._allowed_commands = [
+            "SUBSCRIBE",
+            "UNSUBSCRIBE",
+            "PSUBSCRIBE",
+            "PING",
+            "QUIT",
+        ]
+
     def subscribe(self, client: socket.socket, channel: str):
         self._channels[channel].add(client)
-    
+
     def unsubscribe(self, client: socket.socket, channel: str):
         self._channels[channel].remove(client)
-    
-    def subscription_count(self, client: socket.socket) -> int:
-        return sum(1 for subscribers in self._channels.values() if client in subscribers)
 
-    def intercept(self, client: socket.socket, parsed_data: list[str], cmd_name: str) -> RESPError | None:
+    def subscription_count(self, client: socket.socket) -> int:
+        return sum(
+            1 for subscribers in self._channels.values() if client in subscribers
+        )
+
+    def intercept(
+        self, client: socket.socket, parsed_data: list[str], cmd_name: str
+    ) -> RESPError | None:
         if not self.is_subscriber(client):
             return
         if cmd_name not in self._allowed_commands:
-            return RESPError(f"Can't execute '{cmd_name}': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT / RESET are allowed in this context")
-    
+            return RESPError(
+                f"Can't execute '{cmd_name}': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT / RESET are allowed in this context"
+            )
+
     def is_subscriber(self, client: socket.socket) -> bool:
         return self.subscription_count(client) > 0
