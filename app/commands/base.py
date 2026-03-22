@@ -17,6 +17,10 @@ class BlockingResponse:
 
 
 @dataclass
+class SubscribeResult:
+    channel: str
+
+@dataclass
 class UnblockEvent:
     key: str
 
@@ -70,7 +74,7 @@ class Command(ABC):
     @abstractmethod
     def execute(
         self, args: list[str]
-    ) -> CommandResult | BlockingResponse | RDBSync | WaitBlocker:
+    ) -> CommandResult | BlockingResponse | RDBSync | WaitBlocker | SubscribeResult:
         """
         Execute the command with the given arguments.
 

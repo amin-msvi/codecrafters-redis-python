@@ -1,3 +1,4 @@
+from app.commands.base import Command, SubscribeResult
 from app.server.pubsub import PubSubState
 
 
@@ -8,6 +9,6 @@ class SubscribeCommand(Command):
     def __init__(self, pubsub_state: PubSubState):
         self._pubsub_state = pubsub_state
     
-    def execute(self, args: list[str]) -> CommandResult | BlockingResponse | RDBSync | WaitBlocker:
+    def execute(self, args: list[str]) -> SubscribeResult:
         channel_name = args[0]
-        return CommandResult(response=["subscribe", channel_name, 1])
+        return SubscribeResult(channel=channel_name)
