@@ -3,13 +3,14 @@ import socket
 from datetime import datetime, timedelta
 
 from app.blocking import BlockingState, WaitingClient
-from app.commands.base import BlockingResponse, CommandResult, RDBSync, WaitBlocker
+from app.commands.base import BlockingResponse, CommandResult, RDBSync, SubscribeResult, WaitBlocker
 from app.commands.registry import CommandRegistry
 from app.config import TCPServerConfig
 from app.logger import get_logger
 from app.resp_encoder import encode_resp
 from app.resp_parser import parse_request
 from app.server.base_role import ParkClient, SendResponse, TransferToRole
+from app.server.pubsub import PubSubState
 from app.server.roles import ServerRole
 from app.server.server_info import ServerInfo
 from app.server.transaction import ExecResult, TransactionState
@@ -25,6 +26,7 @@ class RedisServer:
         registry: CommandRegistry,
         config: TCPServerConfig,
         server_info: ServerInfo,
+        pubsub_state: PubSubState,
     ):
         self._role = role
         self._config = config
@@ -34,6 +36,7 @@ class RedisServer:
         self._blocking_state: BlockingState = BlockingState()
         self._transaction_state = TransactionState(registry)
         self._server_info = server_info
+        self._pubsub_state = pubsub_state
 
     def start(self):
         logger.info("Starting server on %s:%d", self._config.host, self._config.port)
@@ -129,6 +132,10 @@ class RedisServer:
                 case WaitBlocker():
                     self._role.on_wait(result, client)
                     return ParkClient()
+                case SubscribeResult(channel):
+                    self._pubsub_state.subscribe(client, channel)
+                    count = self._pubsub_state.subscription_count(client)
+                    return SendResponse(encode_resp(["subscribe", channel, count]))
                 case RESPError():
                     return SendResponse(response=encode_resp(result))
                 case _:

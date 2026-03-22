@@ -12,6 +12,7 @@ from app.server import (
     ReplicaRole,
     RedisServer,
     ServerInfo,
+    PubSubState,
 )
 from app.server.connection import MasterConnection
 
@@ -56,11 +57,13 @@ def main():
     database = DataBase()
     rdb_loader = RDBLoader(server_config)
     rdb_loader.load_into(database)
+    pubsub_state = PubSubState()
 
     dependencies = {
         DataBase: database,
         ServerInfo: server_info,
         ServerConfig: server_config,
+        PubSubState: pubsub_state,
     }
     registry = CommandRegistry()
     registry.auto_discover(dependencies)
@@ -75,7 +78,7 @@ def main():
         role = MasterRole(server_info, registry, config)
 
     # Create and start server
-    server = RedisServer(role, registry, config, server_info)
+    server = RedisServer(role, registry, config, server_info, pubsub_state)
     server.start()
 
 
