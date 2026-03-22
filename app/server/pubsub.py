@@ -30,13 +30,16 @@ class PubSubState:
 
     def intercept(
         self, client: socket.socket, parsed_data: list[str], cmd_name: str
-    ) -> RESPError | None:
+    ) -> list[str] | RESPError | None:
         if not self.is_subscriber(client):
             return
         if cmd_name not in self._allowed_commands:
             return RESPError(
                 f"Can't execute '{cmd_name}': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT / RESET are allowed in this context"
             )
+        
+        if cmd_name == "PING":
+            return ["pong", ""]
 
     def is_subscriber(self, client: socket.socket) -> bool:
         return self.subscription_count(client) > 0
