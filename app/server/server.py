@@ -150,7 +150,7 @@ class RedisServer:
                     count = self._pubsub_state.subscription_count(client)
                     return SendResponse(encode_resp(["subscribe", channel, count]))
                 case PublishResult(channel, message):  # noqa
-                    # self._pubsub_state.publish()
+                    self._pubsub_state.publish(channel, message)
                     count = self._pubsub_state.publish_count(channel)
                     return SendResponse(encode_resp(count))
                 case RESPError():

@@ -1,6 +1,7 @@
 from collections import defaultdict
 import socket
 
+from app.resp_encoder import encode_resp
 from app.types import RESPError
 
 
@@ -19,8 +20,16 @@ class PubSubState:
 
     def subscribe(self, client: socket.socket, channel: str):
         self._channels[channel].add(client)
+    
+    def publish(self, channel: str, message: str) -> None:
+        subscribers = self._get_subscribers_of(channel)
+        if subscribers is None:
+            return
 
-    def unsubscribe(self, client: socket.socket, channel: str):
+        for subscriber in subscribers:
+            subscriber.sendall(encode_resp(["message", channel, message]))
+
+    def unsubscribe(self, client: socket.socket, channel: str) -> None:
         self._channels[channel].remove(client)
 
     def subscription_count(self, client: socket.socket) -> int:
@@ -48,3 +57,6 @@ class PubSubState:
 
     def is_subscriber(self, client: socket.socket) -> bool:
         return self.subscription_count(client) > 0
+    
+    def _get_subscribers_of(self, channel: str) -> set[socket.socket] | None:
+        return self._channels.get(channel)
