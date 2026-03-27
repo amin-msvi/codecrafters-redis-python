@@ -21,6 +21,7 @@ from app.commands.config import ConfigCommand
 from app.commands.keys import KeysCommand
 from app.commands.subscribe import SubscribeCommand
 from app.commands.publish import PublishCommand
+from app.commands.unsubscribe import UnsubscribeCommand
 
 from app.commands.registry import CommandRegistry
 

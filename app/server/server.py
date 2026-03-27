@@ -9,6 +9,7 @@ from app.commands.base import (
     PublishResult,
     RDBSync,
     SubscribeResult,
+    UnsubscribeResult,
     WaitBlocker,
 )
 from app.commands.registry import CommandRegistry
@@ -153,6 +154,10 @@ class RedisServer:
                     self._pubsub_state.publish(channel, message)
                     count = self._pubsub_state.publish_count(channel)
                     return SendResponse(encode_resp(count))
+                case UnsubscribeResult(channel):
+                    self._pubsub_state.unsubscribe(client, channel)
+                    count = self._pubsub_state.subscription_count(client)
+                    return SendResponse(encode_resp(["unsubscribe", channel, count]))
                 case RESPError():
                     return SendResponse(response=encode_resp(result))
                 case _:

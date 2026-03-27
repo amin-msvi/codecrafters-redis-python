@@ -9,6 +9,7 @@ from app.commands.base import (
     PublishResult,
     RDBSync,
     SubscribeResult,
+    UnsubscribeResult,
     WaitBlocker,
 )
 from app.types import RESPError, RESPValue
@@ -36,6 +37,7 @@ class CommandRegistry:
         | RDBSync
         | WaitBlocker
         | SubscribeResult
+        | UnsubscribeResult
         | PublishResult
         | RESPError
     ):
