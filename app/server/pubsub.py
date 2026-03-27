@@ -12,6 +12,7 @@ class PubSubState:
         )  # channels -> sockets
         self._allowed_commands = [
             "SUBSCRIBE",
+            "PUBLISH"
             "UNSUBSCRIBE",
             "PSUBSCRIBE",
             "PING",
@@ -44,16 +45,28 @@ class PubSubState:
 
     def intercept(
         self, client: socket.socket, parsed_data: list[str], cmd_name: str
-    ) -> list[str] | RESPError | None:
-        if not self.is_subscriber(client):
-            return
-        if cmd_name not in self._allowed_commands:
-            return RESPError(
-                f"Can't execute '{cmd_name}': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT / RESET are allowed in this context"
-            )
+    ) -> list[str | int] | int | RESPError | None:
 
-        if cmd_name == "PING":
-            return ["pong", ""]
+        if cmd_name == "SUBSCRIBE":
+            channel = parsed_data[1]
+            self.subscribe(client, channel)
+            return ["subscribe", channel, self.subscription_count(client)]
+        elif cmd_name == "UNSUBSCRIBE":
+            channel = parsed_data[1]
+            self.unsubscribe(client, channel)
+            return ["unsubscribe", channel, self.subscription_count(client)]
+        elif cmd_name == "PUBLISH":
+            channel = parsed_data[1]
+            message = parsed_data[2]
+            self.publish(channel, message)
+            return self.publish_count(channel)
+        
+        if self.is_subscriber(client):
+            if cmd_name == "PING":
+                return ["pong", ""]
+            return RESPError(
+                    f"Can't execute '{cmd_name}': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT / RESET are allowed in this context"
+                )
 
     def is_subscriber(self, client: socket.socket) -> bool:
         return self.subscription_count(client) > 0

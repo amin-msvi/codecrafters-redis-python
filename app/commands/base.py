@@ -17,22 +17,6 @@ class BlockingResponse:
 
 
 @dataclass
-class SubscribeResult:
-    channel: str
-
-
-@dataclass
-class UnsubscribeResult:
-    channel: str
-
-
-@dataclass
-class PublishResult:
-    channel: str
-    message: str
-
-
-@dataclass
 class UnblockEvent:
     key: str
 
@@ -91,9 +75,6 @@ class Command(ABC):
         | BlockingResponse
         | RDBSync
         | WaitBlocker
-        | SubscribeResult
-        | UnsubscribeResult
-        | PublishResult
     ):
         """
         Execute the command with the given arguments.

@@ -6,10 +6,7 @@ from app.blocking import BlockingState, WaitingClient
 from app.commands.base import (
     BlockingResponse,
     CommandResult,
-    PublishResult,
     RDBSync,
-    SubscribeResult,
-    UnsubscribeResult,
     WaitBlocker,
 )
 from app.commands.registry import CommandRegistry
@@ -146,18 +143,6 @@ class RedisServer:
                 case WaitBlocker():
                     self._role.on_wait(result, client)
                     return ParkClient()
-                case SubscribeResult(channel):
-                    self._pubsub_state.subscribe(client, channel)
-                    count = self._pubsub_state.subscription_count(client)
-                    return SendResponse(encode_resp(["subscribe", channel, count]))
-                case PublishResult(channel, message):  # noqa
-                    self._pubsub_state.publish(channel, message)
-                    count = self._pubsub_state.publish_count(channel)
-                    return SendResponse(encode_resp(count))
-                case UnsubscribeResult(channel):
-                    self._pubsub_state.unsubscribe(client, channel)
-                    count = self._pubsub_state.subscription_count(client)
-                    return SendResponse(encode_resp(["unsubscribe", channel, count]))
                 case RESPError():
                     return SendResponse(response=encode_resp(result))
                 case _:
