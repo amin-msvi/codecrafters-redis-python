@@ -86,7 +86,15 @@ class Command(ABC):
     @abstractmethod
     def execute(
         self, args: list[str]
-    ) -> CommandResult | BlockingResponse | RDBSync | WaitBlocker | SubscribeResult | UnsubscribeResult | PublishResult:
+    ) -> (
+        CommandResult
+        | BlockingResponse
+        | RDBSync
+        | WaitBlocker
+        | SubscribeResult
+        | UnsubscribeResult
+        | PublishResult
+    ):
         """
         Execute the command with the given arguments.
 
