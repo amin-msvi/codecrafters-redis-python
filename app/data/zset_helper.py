@@ -5,18 +5,18 @@ from app.data.zset.zset import ZSet
 class ZSetOps:
     def __init__(self, db: DataBase) -> None:
         self._db = db
-    
+
     def add(self, key: str, score: float, member: str) -> bool:
         """Returns True if member was newly added"""
         zset = self._get_or_create(key)
         return zset.add(member, score)
-    
+
     def rank(self, key: str, member: str) -> int | None:
         zset = self._get_zset(key)
         if not zset:
             return None
         return zset.rank(member)
-    
+
     def length(self, key) -> int:
         zset = self._get_zset(key)
         return len(zset) if zset else 0
@@ -26,8 +26,7 @@ class ZSetOps:
         if zset is None:
             return []
         return zset.range_by_rank(start, end)
-            
-        
+
     # Private Methods
     def _get_or_create(self, key: str) -> ZSet:
         val = self._db.get(key)
