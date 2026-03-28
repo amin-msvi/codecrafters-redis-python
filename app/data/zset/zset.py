@@ -37,6 +37,10 @@ class ZSet:
 
         members = [entry[0] for entry in sorted_members[start : stop + 1]]
         return members
+    
+    def remove(self, member: str) -> int:
+        removed = self._scores.pop(member, 0)
+        return 1 if removed != 0 else 0
 
     def __len__(self) -> int:
         return len(self._scores)

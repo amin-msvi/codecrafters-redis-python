@@ -24,6 +24,8 @@ from app.commands.zrank import ZRankCommand
 from app.commands.zrange import ZRangeCommand
 from app.commands.zcard import ZCardCommand
 from app.commands.zscore import ZScoreCommand
+from app.commands.zrem import ZRemCommand
+
 from app.commands.registry import CommandRegistry
 
 __all__ = ["CommandRegistry"]
