@@ -8,5 +8,17 @@ class ZSet:
         self._scores[member] = score
         return is_new
 
+    def rank(self, member: str) -> int | None:
+        """Return 0-based rank by ascending score, or None if not found"""
+        # Dummy solution for now. I'll get back to this. Do the following:
+        # 1. Design a better solution to save the items sorted in the first place
+        # 2. Just check the index for the rank
+        sorted_list = sorted(self._scores.items(), key=lambda x: x[1])
+        sorted_list = sorted(self._scores.items(), key=lambda x: x) # alphabetic sort
+        for entry in sorted_list:
+            if entry[0] == member:
+                return sorted_list.index(entry)
+
+        return None
     def __len__(self) -> int:
         return len(self._scores)

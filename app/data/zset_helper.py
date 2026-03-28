@@ -10,6 +10,12 @@ class ZSetOps:
         """Returns True if member was newly added"""
         zset = self._get_or_create(key)
         return zset.add(member, score)
+    
+    def rank(self, key: str, member: str) -> int | None:
+        zset = self._get_zset(key)
+        if not zset:
+            return None
+        return zset.rank(member)
     # Private Methods
     def _get_or_create(self, key: str) -> ZSet:
         val = self._db.get(key)
@@ -22,6 +28,6 @@ class ZSetOps:
             raise TypeError(f"WRONGTYPE {key} is not a sorted set")
         return val.data
 
-    def _get_zset(self, key: str) -> RedisValue | None:
+    def _get_zset(self, key: str) -> ZSet | None:
         redis_val = self._db.get(key)
-        return redis_val if redis_val and redis_val.dtype == "zset" else None
+        return redis_val.data if redis_val and redis_val.dtype == "zset" else None
