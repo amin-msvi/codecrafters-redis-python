@@ -1,20 +1,20 @@
 from app.data.db import DataBase, RedisValue
-from app.data.sorted_set.sset import SortedSet
+from app.data.sorted_set.zset import ZSet
 
 
-class SortedSetOps:
+class ZSetOps:
     def __init__(self, db: DataBase) -> None:
         self._db = db
     
     def add(self, key: str, score: float, value: str):
         redis_val = self._get_or_create(key)
-        sset_entry = (score, value)
-        redis_val.data.add(sset_entry)
+        zset_entry = (score, value)
+        redis_val.data.add(zset_entry)
     
     def _get_or_create(self, key: str):
         val = self._db.get(key)
         if val is None:
-            val = RedisValue(dtype="sset", data=SortedSet())
+            val = RedisValue(dtype="zset", data=ZSet())
             self._db.set(key, val)
             return val
         

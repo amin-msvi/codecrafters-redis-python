@@ -1,6 +1,6 @@
 from app.commands.base import Command, CommandFlags, CommandResult
 from app.data.db import DataBase
-from app.data.sorted_set_helper import SortedSetOps
+from app.data.zset_helper import ZSetOps
 
 
 class ZAddCommand(Command):
@@ -9,7 +9,7 @@ class ZAddCommand(Command):
     flags = CommandFlags(write=True)
     
     def __init__(self, database: DataBase):
-        self._sorted_set_ops = SortedSetOps(database)
+        self._sorted_set_ops = ZSetOps(database)
     
     def execute(self, args: list[str]) -> CommandResult:
         key, score, member = args

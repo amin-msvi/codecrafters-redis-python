@@ -1,4 +1,4 @@
-class SortedSet:
+class ZSet:
     def __init__(self) -> None:
         self._entries: list[tuple] = []
     
