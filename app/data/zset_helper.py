@@ -16,6 +16,11 @@ class ZSetOps:
         if not zset:
             return None
         return zset.rank(member)
+    
+    def length(self, key) -> int:
+        zset = self._get_zset(key)
+        return len(zset) if zset else 0
+
     def range(self, key: str, start: int, end: int) -> list[str]:
         zset = self._get_zset(key)
         if zset is None:

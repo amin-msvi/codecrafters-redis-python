@@ -22,6 +22,7 @@ from app.commands.keys import KeysCommand
 from app.commands.zadd import ZAddCommand
 from app.commands.zrank import ZRankCommand
 from app.commands.zrange import ZRangeCommand
+from app.commands.zcard import ZCardCommand
 
 from app.commands.registry import CommandRegistry
 
