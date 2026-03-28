@@ -30,15 +30,14 @@ class ZSetOps:
         if zset is None:
             return []
         return zset.range_by_rank(start, end)
-    
+
     def remove(self, key: str, member: str) -> int | None:
         zset = self._get_zset(key)
         if zset is None:
             return None
-        
+
         removed_count = zset.remove(member)
         return removed_count
-        
 
     # Private Methods
     def _get_or_create(self, key: str) -> ZSet:

@@ -9,9 +9,8 @@ class ZRemCommand(Command):
 
     def __init__(self, database: DataBase) -> None:
         self._zset_ops = ZSetOps(database)
-    
+
     def execute(self, args: list[str]) -> CommandResult:
         key, member = args
         removed_members_count = self._zset_ops.remove(key, member)
         return CommandResult(response=removed_members_count)
-    
