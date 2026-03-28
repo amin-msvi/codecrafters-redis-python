@@ -8,6 +8,10 @@ class ZSet:
         self._scores[member] = score
         return is_new
 
+    def score(self, member: str) -> float | None:
+        """Return the score for a member, or None if not found."""
+        return self._scores.get(member)
+
     def rank(self, member: str) -> int | None:
         """Return 0-based rank by ascending score, or None if not found"""
         # It's a dummy solution for now. I'll get back to this. Do the following:

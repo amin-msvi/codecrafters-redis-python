@@ -21,6 +21,10 @@ class ZSetOps:
         zset = self._get_zset(key)
         return len(zset) if zset else 0
 
+    def score(self, key: str, member: str) -> float | None:
+        zset = self._get_zset(key)
+        return zset.score(member) if zset else None
+
     def range(self, key: str, start: int, end: int) -> list[str]:
         zset = self._get_zset(key)
         if zset is None:
