@@ -16,6 +16,13 @@ class ZSetOps:
         if not zset:
             return None
         return zset.rank(member)
+    def range(self, key: str, start: int, end: int) -> list[str]:
+        zset = self._get_zset(key)
+        if zset is None:
+            return []
+        return zset.range_by_rank(start, end)
+            
+        
     # Private Methods
     def _get_or_create(self, key: str) -> ZSet:
         val = self._db.get(key)

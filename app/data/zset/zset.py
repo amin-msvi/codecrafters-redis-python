@@ -20,5 +20,12 @@ class ZSet:
         for i, (name, _) in enumerate(sorted_list):
             if name == member:
                 return i
+
+    def range_by_rank(self, start: int, stop: int) -> list[str]:
+        """Return members in [start, stop] rank range (inclusive), ascending order."""
+        sorted_members = sorted(self._scores.items(), key=lambda x: (x[1], x[0]))
+        members = [entry[0] for entry in sorted_members[start : stop+1]]
+        return members
+
     def __len__(self) -> int:
         return len(self._scores)
