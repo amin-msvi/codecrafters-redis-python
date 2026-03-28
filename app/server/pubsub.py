@@ -12,7 +12,7 @@ class PubSubState:
         )  # channels -> sockets
         self._allowed_commands = [
             "SUBSCRIBE",
-            "PUBLISH"
+            "PUBLISH",
             "UNSUBSCRIBE",
             "PSUBSCRIBE",
             "PING",
@@ -34,7 +34,7 @@ class PubSubState:
         self._channels[channel].remove(client)
 
     def subscription_count(self, client: socket.socket) -> int:
-        """Returns the number of channels the client subscribed to (client_1 -> channel1, channel2 --> 2)"""
+        """Returns the number of channels the client subscribed to `client_1` -> [channel1, channel2] => 2"""
         return sum(
             1 for subscribers in self._channels.values() if client in subscribers
         )
@@ -60,13 +60,13 @@ class PubSubState:
             message = parsed_data[2]
             self.publish(channel, message)
             return self.publish_count(channel)
-        
+
         if self.is_subscriber(client):
             if cmd_name == "PING":
                 return ["pong", ""]
             return RESPError(
-                    f"Can't execute '{cmd_name}': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT / RESET are allowed in this context"
-                )
+                f"Can't execute '{cmd_name}': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT / RESET are allowed in this context"
+            )
 
     def is_subscriber(self, client: socket.socket) -> bool:
         return self.subscription_count(client) > 0
