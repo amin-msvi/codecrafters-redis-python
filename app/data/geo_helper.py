@@ -171,3 +171,29 @@ class GeoOps(ZSetOps):
             )
         return locations
 
+    def search(
+        self,
+        key: str,
+        search_type: str,
+        lon: float,
+        lat: float,
+        by: str,
+        distance: float,
+        unit: str
+    ) -> list[str]:
+        # In CodeCrafters we only work with FROMLONLAT and BYRADIUS.
+        if by != "BYRADIUS" or search_type != "FROMLONLAT":
+            return []
+
+        within_distance = []
+        if unit == "km":
+            distance *= 1000
+        members = self.range(key, 0, -1)
+        for member in members:
+            score = self.score(key, member)
+            if score is None:
+                continue
+            mem_lon, mem_lat = self.decode(score)
+            if self.distance(lat, lon, mem_lat, mem_lon) < distance:
+                within_distance.append(member)
+        return within_distance
