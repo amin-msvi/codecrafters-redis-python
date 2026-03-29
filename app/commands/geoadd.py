@@ -17,8 +17,9 @@ class GeoAddCommand(Command):
         validate = self._validate_geo(float(long), float(lat))
         if validate is not None:
             return CommandResult(validate)
-
-        return CommandResult(response=1)
+        
+        is_new = self._zset_ops.add(key, 0, member)
+        return CommandResult(response=1 if is_new else 0)
 
     @staticmethod
     def _validate_geo(long: float, lat: float) -> RESPError | None:
