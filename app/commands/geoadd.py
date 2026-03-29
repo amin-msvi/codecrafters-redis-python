@@ -18,20 +18,26 @@ def _spread_int32_to_int64(v: int) -> int:
     
     Before spread: x1  x2  ...  x31  x32
     After spread:  0   x1  ...   0   x16  ... 0  x31  0  x32
+    
+    4bit example:
+        v = 0b1011
+        v ->              1     0     1     1
+        v_spreaded -> (0, 1, 0, 0, 0, 1, 0, 1)
     """
     # Ensure only lower 32 bits are non-zero.
     v = v & 0xFFFFFFFF
     
     # Bitwise operations to spread 32 bits into 64 bits with zeroes in-between
-    v = (v | (v << 16)) & 0x0000FFFF0000FFFF
-    v = (v | (v << 8))  & 0x00FF00FF00FF00FF
-    v = (v | (v << 4))  & 0x0F0F0F0F0F0F0F0F
-    v = (v | (v << 2))  & 0x3333333333333333
-    v = (v | (v << 1))  & 0x5555555555555555
+    v = (v | (v << 16)) & 0x0000FFFF0000FFFF  # bin: 0000000000000000111111111111111100000000000000001111111111111111
+    v = (v | (v << 8))  & 0x00FF00FF00FF00FF  # bin: 0000000011111111000000001111111100000000111111110000000011111111
+    v = (v | (v << 4))  & 0x0F0F0F0F0F0F0F0F  # bin: 0000111100001111000011110000111100001111000011110000111100001111
+    v = (v | (v << 2))  & 0x3333333333333333  # bin: 0011001100110011001100110011001100110011001100110011001100110011
+    v = (v | (v << 1))  & 0x5555555555555555  # bin: 0101010101010101010101010101010101010101010101010101010101010101
 
     return v
 
 def _interleave(x: int, y: int) -> int:
+    """Bit interleaving approach is also called 'Morton Code' or 'Z-order Curve'"""
     # First, the values are spread from 32-bit to 64-bit integers.
     # This is done by inserting 32 zero bits in-between.
     #
@@ -40,7 +46,7 @@ def _interleave(x: int, y: int) -> int:
     x = _spread_int32_to_int64(x)
     y = _spread_int32_to_int64(y)
     
-    # The y value is then shifted 1 bit to the left.
+    # The y value is then shifted 1 bit to the left. (To land y bits in the odd positions)
     # Before shift: 0   y1   0   y2 ... 0   y31   0   y32
     # After shift:  y1   0   y2 ... 0   y31   0   y32   0
     y_shifted = y << 1
@@ -78,6 +84,18 @@ class GeoAddCommand(Command):
             1. normalize each long and lat to [0, 2**26] range.
             2. truncate the normalized values to integer.
             3. interleave the integers to get a 52bits (26 + 26) integer.
+
+        - 2 Cool points:
+            1. Why not just concatenating the lat and longs?!
+                It can be reversible and technically it's possible. However, interleaving approach
+                gives a usefull property:
+                    Nearby scores corresponds to nearby points in 2D space -> in range
+                    query: Spacially coherent regions! cool cool!
+            2. Don't we lose information when we truncate values to int?!
+                The value is recovered in one quantization step:
+                    (_LAT_RANGE / 2^26) ≈ (170.1 / 67 million) ≈ 0.0000025°
+                it's about 28 cm! So mathematically, it's not exact. but for geo applications? enough!
+        
         """
         # Step 1:
         normalized_lat = 2**26 * (lat - _MIN_LAT) / _LAT_RANGE
