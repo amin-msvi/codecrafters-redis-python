@@ -112,9 +112,9 @@ def _decode_score_to_long_lat(score: float) -> list[float]:
     return [long, lat]
 
 
-class GeoOps(ZSetOps):
+class GeoOps:
     def __init__(self, database: DataBase):
-        super().__init__(database)
+        self._zset_ops = ZSetOps(database)
 
     def validate(self, lat: float, long: float) -> RESPError | None:
         if not (_MIN_LAT <= lat <= _MAX_LAT):
@@ -161,7 +161,7 @@ class GeoOps(ZSetOps):
     def positions(self, key: str, members: list[str]) -> list[float | NullArray]:
         locations = []
         for member in members:
-            score = self.score(key, member)
+            score = self._zset_ops.score(key, member)
             if score is None:
                 result = None
             else:
@@ -188,9 +188,9 @@ class GeoOps(ZSetOps):
         within_distance = []
         if unit == "km":
             distance *= 1000
-        members = self.range(key, 0, -1)
+        members = self._zset_ops.range(key, 0, -1)
         for member in members:
-            score = self.score(key, member)
+            score = self._zset_ops.score(key, member)
             if score is None:
                 continue
             mem_lon, mem_lat = self.decode(score)
