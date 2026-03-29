@@ -3,7 +3,6 @@ from app.data.db import DataBase
 from app.data.zset_helper import ZSetOps
 from app.types import NullArray, RESPError
 
-
 _MIN_LAT = -85.05112878
 _MAX_LAT = 85.05112878
 _MIN_LONG = -180.0
@@ -72,16 +71,16 @@ def _interleave(x: int, y: int) -> int:
 
 
 def _haversine(lat1: float, long1: float, lat2: float, long2: float) -> float:
-    R = 6372797.560856 # Earth radius in KM
-    
+    R = 6372797.560856  # Earth radius in KM
+
     dLat = radians(lat2 - lat1)
     dLong = radians(long2 - long1)
     lat1 = radians(lat1)
     lat2 = radians(lat2)
-    
+
     a = sin(dLat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dLong / 2) ** 2
     c = 2 * asin(sqrt(a))
-    
+
     return R * c
 
 
@@ -121,7 +120,7 @@ class GeoOps:
             return RESPError(f"invalid longtitude, latitude pair {long}, {lat}")
         if not (_MIN_LONG <= long <= _MAX_LONG):
             return RESPError(f"invalid longitude,latitude pair {long}, {lat}")
-    
+
     def encode(self, long: float, lat: float) -> float:
         """
         3 Steps to convert long and lat to a zset score:
@@ -151,13 +150,13 @@ class GeoOps:
 
         # Step 3:
         return _interleave(x=lat_truncated, y=long_truncated)
-    
+
     def distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
         return _haversine(lat1, lon1, lat2, lon2)
-    
+
     def decode(self, score: float) -> list[float]:
         return _decode_score_to_long_lat(score)
-    
+
     def positions(self, key: str, members: list[str]) -> list[float | NullArray]:
         locations = []
         for member in members:
@@ -179,7 +178,7 @@ class GeoOps:
         lat: float,
         by: str,
         distance: float,
-        unit: str
+        unit: str,
     ) -> list[str]:
         # In CodeCrafters we only work with FROMLONLAT and BYRADIUS.
         if by != "BYRADIUS" or search_type != "FROMLONLAT":
