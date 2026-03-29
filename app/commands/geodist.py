@@ -61,18 +61,16 @@ class GeoDistCommand(Command):
     def __init__(self, database: DataBase):
         self._zset_ops = ZSetOps(database)
     
-    def execute(self, args: list[str]) -> CommandResult | RESPError:
+    def execute(self, args: list[str]) -> CommandResult:
         key, loc1, loc2 = args
         score_loc1 = self._zset_ops.score(key, loc1)
         score_loc2 = self._zset_ops.score(key, loc2)
         if score_loc1 is None or score_loc2 is None:
-            return RESPError("Locations not found.")
+            return CommandResult(response=RESPError("Locations not found."))
+
         long1, lat1 = _decode_score_to_long_lat(score_loc1)
         long2, lat2 = _decode_score_to_long_lat(score_loc2)
         
         # lat1: float, long1: float, lat2: float, long2: float
         distance = haversine(lat1, long1, lat2, long2)
         return CommandResult(response=str(distance))
-        
-        
-        
