@@ -26,6 +26,7 @@ from app.commands.zcard import ZCardCommand
 from app.commands.zscore import ZScoreCommand
 from app.commands.zrem import ZRemCommand
 from app.commands.geoadd import GeoAddCommand
+from app.commands.geopos import GeoPosCommand
 
 from app.commands.registry import CommandRegistry
 
