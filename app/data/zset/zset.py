@@ -1,3 +1,10 @@
+"""
+The underlying data structure for zset is not efficient at all.
+Just for the sake of simplicity, I implemented a dummy hashmap-base solution.
+At some point, I'll get back to it and I might implement it with hashmap + skip lists (just like the prd redis)
+"""
+
+
 class ZSet:
     def __init__(self) -> None:
         self._scores: dict[str, float] = {}
@@ -14,9 +21,6 @@ class ZSet:
 
     def rank(self, member: str) -> int | None:
         """Return 0-based rank by ascending score, or None if not found"""
-        # It's a dummy solution for now. I'll get back to this. Do the following:
-        # 1. Design a better solution to save the items sorted in the first place
-        # 2. Just check the index for the rank
         if member not in self._scores:
             return None
 
