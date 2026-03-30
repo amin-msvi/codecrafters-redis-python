@@ -66,3 +66,5 @@ class MasterInfo:
 @dataclass
 class ACLState:
     whoami: str = field(default_factory=lambda: "default")
+    flags: list[str] = field(default_factory=lambda: [])
+    

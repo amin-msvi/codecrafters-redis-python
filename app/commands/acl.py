@@ -14,7 +14,12 @@ class ACLCommand(Command):
         if subcommand.upper() == "WHOAMI":
             result = self._whoami(args[1:])
             return CommandResult(response=result)
+        if subcommand.upper() == "GETUSER":
+            result = self._getuser(args[1:])
+            return CommandResult(result)
     
     def _whoami(self, args: list[str]) -> str:
         return self._acl_state.whoami
-        
+    
+    def _getuser(self, args: list[str]) -> list:
+        return ["flags", self._acl_state.flags]
