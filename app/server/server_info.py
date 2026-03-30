@@ -62,9 +62,12 @@ class MasterInfo:
         host, port = info[0], int(info[1])
         return cls(host=host, port=port)
 
-
 @dataclass
 class ACLState:
     whoami: str = field(default_factory=lambda: "default")
-    flags: list[str] = field(default_factory=lambda: [])
+    flags: list[str] = field(default_factory=lambda: ["nopass"])
     
+    def add_flags(self, flag: str):
+        if flag in self.flags:
+            return
+        self.flags.append(flag)
