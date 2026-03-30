@@ -61,3 +61,8 @@ class MasterInfo:
             raise ValueError("server info must be '<host> <port>'")
         host, port = info[0], int(info[1])
         return cls(host=host, port=port)
+
+
+@dataclass
+class ACLState:
+    whoami: str = field(default_factory=lambda: "default")
