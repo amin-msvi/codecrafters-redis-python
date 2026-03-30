@@ -22,4 +22,4 @@ class ACLCommand(Command):
         return self._acl_state.whoami
     
     def _getuser(self, args: list[str]) -> list:
-        return ["flags", self._acl_state.flags]
+        return self._acl_state.getuser.get_states()

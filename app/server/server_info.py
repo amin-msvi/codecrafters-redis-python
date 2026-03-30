@@ -62,12 +62,26 @@ class MasterInfo:
         host, port = info[0], int(info[1])
         return cls(host=host, port=port)
 
+
 @dataclass
-class ACLState:
-    whoami: str = field(default_factory=lambda: "default")
+class ACLGetUser:
     flags: list[str] = field(default_factory=lambda: ["nopass"])
-    
+    passwords: list[str] = field(default_factory=lambda: [])
+
     def add_flags(self, flag: str):
         if flag in self.flags:
             return
         self.flags.append(flag)
+    
+    def get_states(self):
+        result = []
+        for f in fields(self):
+            result.append(f.name)
+            result.append(getattr(self, f.name))
+        return result
+
+
+@dataclass
+class ACLState:
+    whoami: str = field(default_factory=lambda: "default")
+    getuser: ACLGetUser = field(default_factory=ACLGetUser)
