@@ -15,7 +15,7 @@ from app.server import (
     PubSubState,
 )
 from app.server.connection import MasterConnection
-from app.server.server_info import ACLState
+from app.server.server_info import User
 
 
 def parse_cli_args() -> Namespace:
@@ -65,7 +65,7 @@ def main():
         ServerInfo: server_info,
         ServerConfig: server_config,
         PubSubState: pubsub_state,
-        ACLState: ACLState(),
+        User: User(),
     }
     registry = CommandRegistry()
     registry.auto_discover(dependencies)

@@ -1,5 +1,8 @@
 from dataclasses import field, dataclass, fields
+from hashlib import sha256
 from uuid import uuid4
+
+from app.types import SimpleString
 
 
 @dataclass
@@ -64,7 +67,7 @@ class MasterInfo:
 
 
 @dataclass
-class ACLGetUser:
+class ACLUser:
     flags: list[str] = field(default_factory=lambda: ["nopass"])
     passwords: list[str] = field(default_factory=lambda: [])
 
@@ -79,9 +82,15 @@ class ACLGetUser:
             result.append(f.name)
             result.append(getattr(self, f.name))
         return result
+    
+    def set_user(self, password: str) -> SimpleString:
+        if password[0] == ">":
+            self.passwords.append(sha256(password[1:].encode()).hexdigest())
+        self.flags.remove("nopass")
+        return SimpleString("OK")
 
 
 @dataclass
-class ACLState:
-    whoami: str = field(default_factory=lambda: "default")
-    getuser: ACLGetUser = field(default_factory=ACLGetUser)
+class User:
+    username: str = field(default_factory=lambda: "default")
+    info: ACLUser = field(default_factory=ACLUser)
