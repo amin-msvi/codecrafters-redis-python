@@ -117,9 +117,9 @@ class GeoOps:
 
     def validate(self, lat: float, long: float) -> RESPError | None:
         if not (_MIN_LAT <= lat <= _MAX_LAT):
-            return RESPError(f"invalid longtitude, latitude pair {long}, {lat}")
+            return RESPError(f"-ERR invalid longtitude, latitude pair {long}, {lat}")
         if not (_MIN_LONG <= long <= _MAX_LONG):
-            return RESPError(f"invalid longitude,latitude pair {long}, {lat}")
+            return RESPError(f"-ERR invalid longitude,latitude pair {long}, {lat}")
 
     def encode(self, long: float, lat: float) -> float:
         """

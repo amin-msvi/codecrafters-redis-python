@@ -65,7 +65,7 @@ class PubSubState:
             if cmd_name == "PING":
                 return ["pong", ""]
             return RESPError(
-                f"Can't execute '{cmd_name}': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT / RESET are allowed in this context"
+                f"-ERR Can't execute '{cmd_name}': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT / RESET are allowed in this context"
             )
 
     def is_subscriber(self, client: socket.socket) -> bool:

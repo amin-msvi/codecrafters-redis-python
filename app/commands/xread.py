@@ -90,7 +90,7 @@ class XReadCommand(Command):
 
         stream_idx = args.index("STREAMS") if "STREAMS" in args else None
         if stream_idx is None:
-            return RESPError("ERR syntax error")
+            return RESPError("-ERR syntax error")
 
         block_idx = args.index("BLOCK") if "BLOCK" in args else None
         expiry: float | None = (

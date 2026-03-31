@@ -18,7 +18,7 @@ class GeoDistCommand(Command):
         score_loc1 = self._zset_ops.score(key, loc1)
         score_loc2 = self._zset_ops.score(key, loc2)
         if score_loc1 is None or score_loc2 is None:
-            return CommandResult(response=RESPError("Locations not found."))
+            return CommandResult(response=RESPError("-ERR Locations not found."))
 
         lon1, lat1 = self._geo_ops.decode(score_loc1)
         lon2, lat2 = self._geo_ops.decode(score_loc2)

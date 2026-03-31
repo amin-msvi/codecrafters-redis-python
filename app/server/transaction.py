@@ -44,7 +44,7 @@ class TransactionState:
                 self.discard(client)
                 return SimpleString("OK")
             else:
-                return RESPError("DISCARD without MULTI")
+                return RESPError("-ERR DISCARD without MULTI")
 
         if self.is_in_transaction(client):
             self.queue(client, parsed_data)
@@ -58,7 +58,7 @@ class TransactionState:
         events = []
 
         if commands_input is None:
-            return ExecResult(result=RESPError("EXEC without MULTI"))
+            return ExecResult(result=RESPError("-ERR EXEC without MULTI"))
         if commands_input == []:
             self.discard(client)
             return ExecResult(result=[])

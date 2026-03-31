@@ -31,20 +31,20 @@ class CommandRegistry:
     ) -> CommandResult | BlockingResponse | RDBSync | WaitBlocker | RESPError:
         """Main entry point - parse input, validate, and execute."""
         if command_input is None:
-            return RESPError("empty command")
+            return RESPError("-ERR empty command")
 
         if isinstance(command_input, RESPError):
             return command_input
 
         if isinstance(command_input, (str, int)):
-            return RESPError("Invalid command format: expected array")
+            return RESPError("-ERR Invalid command format: expected array")
 
         cmd_name = command_input[0].upper()
         args = list(command_input[1:])
 
         command = self._commands.get(cmd_name)
         if command is None:
-            return RESPError(message=f"Unknown command '{command_input[0]}'")
+            return RESPError(f"-ERR Unknown command '{command_input[0]}'")
 
         error = command.validate(args)
         if error:

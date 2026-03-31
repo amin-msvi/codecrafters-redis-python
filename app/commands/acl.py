@@ -21,6 +21,8 @@ class ACLCommand(Command):
         if subcommand.upper() == "SETUSER":
             result = self._setuser(args[1:])
             return CommandResult(result)
+        else:
+            return CommandResult(RESPError("-ERR Subcommand for ACL not found."))
     
     def _whoami(self, args: list[str]) -> str:
         return self._users_info.username

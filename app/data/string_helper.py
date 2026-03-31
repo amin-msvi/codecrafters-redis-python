@@ -32,7 +32,7 @@ class StringOps:
             value.data = str(int(value.data) + 1)
         else:
             print("CAUGHT ERROR")
-            return RESPError("value is not an integer or out of range")
+            return RESPError("-ERR value is not an integer or out of range")
         return int(value.data)
 
     # Private methods

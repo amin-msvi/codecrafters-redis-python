@@ -17,7 +17,7 @@ class ZAddCommand(Command):
         try:
             score = float(score_str)
         except ValueError:
-            return CommandResult(response=RESPError("score is not a valid float"))
+            return CommandResult(response=RESPError("-ERR score is not a valid float"))
 
         is_new = self._zset_ops.add(key, score, member)
         return CommandResult(response=1 if is_new else 0)

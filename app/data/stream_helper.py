@@ -39,7 +39,7 @@ class StreamOps:
         try:
             stream.add(entry)
         except ValueError as e:
-            return RESPError(str(e))  # Domain error -> RESP error
+            return RESPError("-ERR " + str(e))  # Domain error -> RESP error
         return id
 
     def xrange(self, key: str, start_id: str, end_id: str) -> list[StreamEntry]:

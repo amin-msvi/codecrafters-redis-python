@@ -10,7 +10,7 @@ def encode_simple_string(s: str) -> bytes:
 
 def encode_error(message: str) -> bytes:
     """Encode as -ERR message\r\n"""
-    return f"-ERR {message}\r\n".encode("utf-8")
+    return f"{message}\r\n".encode("utf-8")
 
 
 def encode_integer(n: int) -> bytes:

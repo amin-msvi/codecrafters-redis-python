@@ -150,7 +150,7 @@ class RedisServer:
 
         except RESPProtocolError as e:
             logger.warning("Protocol error: %s", e)
-            return SendResponse(response=encode_resp(RESPError("ERR protocol error")))
+            return SendResponse(response=encode_resp(RESPError("-ERR protocol error")))
 
     def _accept_connection(self) -> None:
         assert self._server_socket is not None
