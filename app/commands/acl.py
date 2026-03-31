@@ -9,7 +9,7 @@ class ACLCommand(Command):
 
     def __init__(self, user_info: User):
         self._user_info = user_info
-    
+
     def execute(self, args: list[str]) -> CommandResult:
         subcommand = args[0]
         if subcommand.upper() == "WHOAMI":
@@ -23,13 +23,13 @@ class ACLCommand(Command):
             return CommandResult(result)
         else:
             return CommandResult(RESPError("-ERR Subcommand for ACL not found."))
-    
+
     def _whoami(self, args: list[str]) -> str:
         return self._user_info.username
-    
+
     def _getuser(self, args: list[str]) -> list:
         return self._user_info.info.get_states()
-    
+
     def _setuser(self, args: list[str]) -> SimpleString:
         password = args[1]
         return self._user_info.info.set_user(password)

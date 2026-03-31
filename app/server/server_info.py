@@ -75,20 +75,20 @@ class ACLUser:
         if flag in self.flags:
             return
         self.flags.append(flag)
-    
+
     def get_states(self):
         result = []
         for f in fields(self):
             result.append(f.name)
             result.append(getattr(self, f.name))
         return result
-    
+
     def set_user(self, password: str) -> SimpleString:
         if password[0] == ">":
             self.passwords.append(sha256(password[1:].encode()).hexdigest())
         self.flags.remove("nopass")
         return SimpleString("OK")
-    
+
     def auth(self, password: str) -> bool:
         hashed_pass = sha256(password.encode()).hexdigest()
         if hashed_pass in self.passwords:
@@ -100,8 +100,10 @@ class ACLUser:
 class User:
     username: str = field(default_factory=lambda: "default")
     info: ACLUser = field(default_factory=ACLUser)
-    
+
     def auth(self, username: str, password: str) -> RESPError | SimpleString:
         if self.info.auth(password):
             return SimpleString("OK")
-        return RESPError("-WRONGPASS invalid username-password pair or user is disabled.")
+        return RESPError(
+            "-WRONGPASS invalid username-password pair or user is disabled."
+        )
