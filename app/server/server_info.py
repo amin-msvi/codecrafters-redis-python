@@ -2,7 +2,7 @@ from dataclasses import field, dataclass, fields
 from hashlib import sha256
 from uuid import uuid4
 
-from app.types import SimpleString
+from app.types import RESPError, SimpleString
 
 
 @dataclass
@@ -88,9 +88,20 @@ class ACLUser:
             self.passwords.append(sha256(password[1:].encode()).hexdigest())
         self.flags.remove("nopass")
         return SimpleString("OK")
+    
+    def auth(self, password: str) -> bool:
+        hashed_pass = sha256(password.encode()).hexdigest()
+        if hashed_pass in self.passwords:
+            return True
+        return False
 
 
 @dataclass
 class User:
     username: str = field(default_factory=lambda: "default")
     info: ACLUser = field(default_factory=ACLUser)
+    
+    def auth(self, username: str, password: str) -> RESPError | SimpleString:
+        if self.info.auth(password):
+            return SimpleString("OK")
+        return RESPError("-WRONGPASS invalid username-password pair or user is disabled.")
