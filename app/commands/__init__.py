@@ -30,7 +30,6 @@ from app.commands.geopos import GeoPosCommand
 from app.commands.geodist import GeoDistCommand
 from app.commands.geosearch import GeoSearchCommand
 from app.commands.acl import ACLCommand
-from app.commands.auth import AuthCommand
 
 from app.commands.registry import CommandRegistry
 

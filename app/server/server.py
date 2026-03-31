@@ -17,9 +17,9 @@ from app.resp_parser import parse_request
 from app.server.base_role import ParkClient, SendResponse, TransferToRole
 from app.server.pubsub import PubSubState
 from app.server.roles import ServerRole
-from app.server.server_info import ServerInfo
+from app.server.server_info import ServerInfo, User
 from app.server.transaction import ExecResult, TransactionState
-from app.types import NullArray, RESPError, RESPProtocolError
+from app.types import NullArray, RESPError, RESPProtocolError, SimpleString
 
 logger = get_logger(__name__)
 
@@ -32,6 +32,7 @@ class RedisServer:
         config: TCPServerConfig,
         server_info: ServerInfo,
         pubsub_state: PubSubState,
+        user: User,
     ):
         self._role = role
         self._config = config
@@ -42,6 +43,8 @@ class RedisServer:
         self._transaction_state = TransactionState(registry)
         self._server_info = server_info
         self._pubsub_state = pubsub_state
+        self._user = user
+        self._authenticated_users = []
 
     def start(self):
         logger.info("Starting server on %s:%d", self._config.host, self._config.port)
@@ -103,11 +106,40 @@ class RedisServer:
             reader_pointer += consumed
             self._role.after_command(command_bytes, cmd_flag)
 
+    def _auth_user(self, client: socket.socket, parsed_data: list[str], cmd_name: str) -> list | str |  RESPError | SimpleString | None:
+    
+        if cmd_name == "ACL":
+            if parsed_data[1] == "SETUSER":
+                username, password = parsed_data[2:]
+                self._authenticated_users.append(client)
+                return self._user.info.set_user(password)
+
+        if cmd_name == "AUTH":
+            username, password = parsed_data[1:]
+            auth_result = self._user.auth(username, password)
+            if isinstance(auth_result, SimpleString):
+                self._authenticated_users.append(client)
+            return auth_result
+
+        if "nopass" in self._user.info.flags:
+            return
+
+        if client in self._authenticated_users:
+            return
+
+        return RESPError("-NOAUTH Authentication required.")
+
     def _process_request(
         self, parsed_data: list[str], cmd_name: str, client: socket.socket
     ) -> SendResponse | TransferToRole | ParkClient:
         """Execute, and encode a request."""
+
         try:
+            # Authentication
+            auth_result = self._auth_user(client, parsed_data, cmd_name)
+            if auth_result is not None:
+                return SendResponse(response=encode_resp(auth_result))
+
             # Transactions
             transaction_result = self._transaction_state.intercept(
                 client, parsed_data, cmd_name
@@ -153,7 +185,8 @@ class RedisServer:
             return SendResponse(response=encode_resp(RESPError("-ERR protocol error")))
 
     def _accept_connection(self) -> None:
-        assert self._server_socket is not None
+        if self._server_socket is None:
+            return
         connection, address = self._server_socket.accept()
         logger.info("Connection received from %s", address)
         self._connections.append(connection)

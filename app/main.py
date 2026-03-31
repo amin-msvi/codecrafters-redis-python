@@ -59,13 +59,14 @@ def main():
     rdb_loader = RDBLoader(server_config)
     rdb_loader.load_into(database)
     pubsub_state = PubSubState()
+    user = User()
 
     dependencies = {
         DataBase: database,
         ServerInfo: server_info,
         ServerConfig: server_config,
         PubSubState: pubsub_state,
-        User: User(),
+        User: user,
     }
     registry = CommandRegistry()
     registry.auto_discover(dependencies)
@@ -80,7 +81,7 @@ def main():
         role = MasterRole(server_info, registry, config)
 
     # Create and start server
-    server = RedisServer(role, registry, config, server_info, pubsub_state)
+    server = RedisServer(role, registry, config, server_info, pubsub_state, user)
     server.start()
 
 

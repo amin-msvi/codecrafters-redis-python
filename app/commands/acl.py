@@ -1,6 +1,6 @@
 from app.commands.base import Command, CommandResult
 from app.server.server_info import User
-from app.types import RESPError, SimpleString
+from app.types import RESPError
 
 
 class ACLCommand(Command):
@@ -18,9 +18,6 @@ class ACLCommand(Command):
         elif subcommand.upper() == "GETUSER":
             result = self._getuser(args[1:])
             return CommandResult(result)
-        elif subcommand.upper() == "SETUSER":
-            result = self._setuser(args[1:])
-            return CommandResult(result)
         else:
             return CommandResult(RESPError("-ERR Subcommand for ACL not found."))
 
@@ -29,7 +26,3 @@ class ACLCommand(Command):
 
     def _getuser(self, args: list[str]) -> list:
         return self._user_info.info.get_states()
-
-    def _setuser(self, args: list[str]) -> SimpleString:
-        password = args[1]
-        return self._user_info.info.set_user(password)
