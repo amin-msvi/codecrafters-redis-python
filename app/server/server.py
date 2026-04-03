@@ -19,7 +19,7 @@ from app.server.pubsub import PubSubState
 from app.server.roles import ServerRole
 from app.server.server_info import ServerInfo, User
 from app.server.transaction import ExecResult, TransactionState
-from app.types import NullArray, RESPError, RESPProtocolError, SimpleString
+from app.types import EncodeableValue, NullArray, RESPError, RESPProtocolError, SimpleString
 
 logger = get_logger(__name__)
 
@@ -105,29 +105,6 @@ class RedisServer:
             command_bytes = data[reader_pointer : reader_pointer + consumed]
             reader_pointer += consumed
             self._role.after_command(command_bytes, cmd_flag)
-
-    def _auth_user(self, client: socket.socket, parsed_data: list[str], cmd_name: str) -> list | str |  RESPError | SimpleString | None:
-    
-        if cmd_name == "ACL":
-            if parsed_data[1] == "SETUSER":
-                username, password = parsed_data[2:]
-                self._authenticated_users.append(client)
-                return self._user.info.set_user(password)
-
-        if cmd_name == "AUTH":
-            username, password = parsed_data[1:]
-            auth_result = self._user.auth(username, password)
-            if isinstance(auth_result, SimpleString):
-                self._authenticated_users.append(client)
-            return auth_result
-
-        if "nopass" in self._user.info.flags:
-            return
-
-        if client in self._authenticated_users:
-            return
-
-        return RESPError("-NOAUTH Authentication required.")
 
     def _process_request(
         self, parsed_data: list[str], cmd_name: str, client: socket.socket
@@ -230,6 +207,30 @@ class RedisServer:
         for client in self._blocking_state.get_expired(now):
             client.socket.sendall(encode_resp(NullArray()))
             self._blocking_state.remove(client)
+
+    # Authentication
+    def _auth_user(self, client: socket.socket, parsed_data: list[str], cmd_name: str) -> EncodeableValue:
+    
+        if cmd_name == "ACL":
+            if parsed_data[1] == "SETUSER":
+                username, password = parsed_data[2:]
+                self._authenticated_users.append(client)
+                return self._user.info.set_user(password)
+
+        if cmd_name == "AUTH":
+            username, password = parsed_data[1:]
+            auth_result = self._user.auth(username, password)
+            if isinstance(auth_result, SimpleString):
+                self._authenticated_users.append(client)
+            return auth_result
+
+        if "nopass" in self._user.info.flags:
+            return
+
+        if client in self._authenticated_users:
+            return
+
+        return RESPError("-NOAUTH Authentication required.")
 
     def _remove_client(self, client: socket.socket) -> None:
         """Clean up a disconnected client."""
